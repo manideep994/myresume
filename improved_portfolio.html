@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manideep Thotakura - Tech Innovator & Research Developer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d1b69 100%);
+            color: white;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        #threejs-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        header {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero-content {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            transform: translateY(0);
+            transition: all 0.6s ease;
+            max-width: 700px;
+        }
+
+        .hero-content:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 35px 70px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #64ffda, #00bcd4, #3f51b5);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 20px rgba(100, 255, 218, 0.3)); }
+            to { filter: drop-shadow(0 0 30px rgba(100, 255, 218, 0.6)); }
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #b0b0b0;
+            margin-bottom: 30px;
+            font-weight: 300;
+        }
+
+        .contact-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .contact-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            justify-content: center;
+        }
+
+        .contact-card:hover {
+            background: rgba(100, 255, 218, 0.1);
+            border-color: rgba(100, 255, 218, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .contact-icon {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .contact-text {
+            font-size: 0.85rem;
+            color: #e0e0e0;
+        }
+
+        .contact-link {
+            font-size: 0.85rem;
+            color: #64ffda;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-link:hover {
+            color: #00bcd4;
+        }
+
+        .section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 100px 0;
+            position: relative;
+        }
+
+        .section-content {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 50px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .section-content:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-5px);
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            color: #64ffda;
+            position: relative;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(135deg, #64ffda, #00bcd4);
+            border-radius: 2px;
+        }
+
+        .highlight-box {
+            background: rgba(100, 255, 218, 0.1);
+            border: 1px solid #64ffda;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .highlight-box h3 {
+            color: #64ffda;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+
+        .research-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .research-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .research-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-5px);
+            border-color: #64ffda;
+        }
+
+        .research-item h3 {
+            color: #64ffda;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .university-badge {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: rgba(100, 255, 218, 0.2);
+            color: #64ffda;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .skills-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .skill-category {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .skill-category:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: scale(1.02);
+        }
+
+        .skill-category h3 {
+            color: #64ffda;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+        }
+
+        .skill-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .skill-bar {
+            width: 50%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .skill-progress {
+            height: 100%;
+            background: linear-gradient(135deg, #64ffda, #00bcd4);
+            border-radius: 3px;
+            animation: fillSkill 2s ease-out;
+        }
+
+        @keyframes fillSkill {
+            from { width: 0; }
+        }
+
+        .projects-list {
+            space-y: 20px;
+        }
+
+        .project-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 4px solid #64ffda;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .project-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(10px);
+        }
+
+        .project-title {
+            font-weight: bold;
+            color: #64ffda;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .project-tech {
+            background: rgba(255, 255, 255, 0.1);
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin: 5px 5px 10px 0;
+            color: #b0b0b0;
+        }
+
+        .experience-timeline {
+            position: relative;
+            padding-left: 40px;
+        }
+
+        .experience-timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #64ffda, #00bcd4);
+        }
+
+        .experience-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .experience-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(10px);
+        }
+
+        .experience-item::before {
+            content: '';
+            position: absolute;
+            left: -32px;
+            top: 25px;
+            width: 12px;
+            height: 12px;
+            background: #64ffda;
+            border-radius: 50%;
+            border: 3px solid #0f0f23;
+        }
+
+        .experience-title {
+            color: #64ffda;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .experience-company {
+            color: #b0b0b0;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        nav {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 10px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 20px;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        nav a:hover, nav a.active {
+            background: rgba(100, 255, 218, 0.2);
+            color: #64ffda;
+        }
+
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .shape {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 20s infinite linear;
+            font-size: 2rem;
+        }
+
+        .shape:nth-child(1) { top: 20%; left: 10%; animation-delay: 0s; }
+        .shape:nth-child(2) { top: 60%; left: 80%; animation-delay: 5s; }
+        .shape:nth-child(3) { top: 80%; left: 20%; animation-delay: 10s; }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-50px) rotate(180deg); }
+            100% { transform: translateY(0px) rotate(360deg); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 40px 0;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: scale(1.05);
+        }
+
+        .stat-number {
+            font-size: 2.2rem;
+            color: #64ffda;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            color: #b0b0b0;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .hero-content { padding: 40px 30px; }
+            .contact-info { 
+                grid-template-columns: 1fr;
+                max-width: 320px;
+                gap: 12px;
+            }
+            .contact-card {
+                padding: 12px 16px;
+                justify-content: center;
+            }
+            nav { 
+                position: relative; 
+                top: auto; 
+                left: auto;
+                transform: none;
+                margin: 20px auto;
+                width: fit-content;
+                padding: 8px 15px;
+            }
+            nav ul { 
+                flex-wrap: wrap; 
+                justify-content: center; 
+                gap: 10px;
+            }
+            nav a {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+            .section-content { padding: 30px 20px; }
+            .research-grid, .skills-container { grid-template-columns: 1fr; }
+            .stats-grid { 
+                grid-template-columns: 1fr 1fr; 
+                max-width: 300px;
+                gap: 20px;
+            }
+        }
+
+        .interactive-particle {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: #64ffda;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5;
+            animation: particleFade 2s ease-out forwards;
+        }
+
+        @keyframes particleFade {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(3); }
+        }
+
+        /* Floating Navigation */
+        .floating-nav {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+
+        .floating-nav-button {
+            width: 60px;
+            height: 60px;
+            background: rgba(100, 255, 218, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(100, 255, 218, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .floating-nav-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 30px rgba(100, 255, 218, 0.5);
+            background: rgba(100, 255, 218, 1);
+        }
+
+        .floating-nav-button span {
+            color: #0f0f23;
+            font-size: 1.5rem;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .floating-nav-button.active span {
+            transform: scale(1.1);
+        }
+
+        .floating-nav-menu {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            background: rgba(15, 15, 35, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(100, 255, 218, 0.3);
+            border-radius: 15px;
+            padding: 15px 0;
+            min-width: 200px;
+            transform: translateY(20px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .floating-nav-menu.active {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .floating-nav-item {
+            display: block;
+            padding: 12px 20px;
+            color: #e0e0e0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+        }
+
+        .floating-nav-item:hover {
+            background: rgba(100, 255, 218, 0.1);
+            color: #64ffda;
+            border-left-color: #64ffda;
+            transform: translateX(5px);
+        }
+
+        .floating-nav-item.active {
+            background: rgba(100, 255, 218, 0.15);
+            color: #64ffda;
+            border-left-color: #64ffda;
+        }
+
+        @media (max-width: 768px) {
+            .floating-nav {
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            .floating-nav-button {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .floating-nav-button span {
+                font-size: 1.2rem;
+            }
+            
+            .floating-nav-menu {
+                min-width: 180px;
+                right: -10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="threejs-container"></div>
+    
+    <nav>
+        <ul>
+            <li><a href="#home" class="nav-link active">Home</a></li>
+            <li><a href="#about" class="nav-link">About</a></li>
+            <li><a href="#research" class="nav-link">Research</a></li>
+            <li><a href="#projects" class="nav-link">Projects</a></li>
+            <li><a href="#skills" class="nav-link">Skills</a></li>
+            <li><a href="#experience" class="nav-link">Experience</a></li>
+            <li><a href="#contact" class="nav-link">Contact</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <header id="home">
+            <div class="hero-content">
+                <h1>Manideep Thotakura</h1>
+                <p class="subtitle">Computer Science Student • Research Enthusiast</p>
+            </div>
+
+    <!-- Floating Navigation -->
+    <div class="floating-nav">
+        <div class="floating-nav-button" id="floatingNavBtn">
+            <span>☰</span>
+        </div>
+        <div class="floating-nav-menu" id="floatingNavMenu">
+            <a href="#home" class="floating-nav-item">🏠 Home & About</a>
+            <a href="#research" class="floating-nav-item">🔬 Research</a>
+            <a href="#projects" class="floating-nav-item">🚀 Projects</a>
+            <a href="#skills" class="floating-nav-item">⚡ Skills</a>
+            <a href="#experience" class="floating-nav-item">💼 Experience</a>
+            <a href="#contact" class="floating-nav-item">📞 Contact</a>
+        </div>
+    </div>
+            
+            <div class="floating-shapes">
+                <div class="shape">🔐</div>
+                <div class="shape">🧠</div>
+                <div class="shape">💻</div>
+            </div>
+        </header>
+
+        <section id="about" class="section">
+            <div class="section-content">
+                <h2>About Me</h2>
+                
+                <div class="highlight-box">
+                    <h3>🏆 University Research Recognition</h3>
+                    <p>Presented research at <strong>UAlbany's Research & Entrepreneurship Week</strong> and featured by the university for innovative work in neural network security and cryptographic systems.</p>
+                </div>
+                
+                <p style="font-size: 1.2rem; line-height: 1.8; margin-bottom: 20px;">
+                    I'm a passionate computer science student currently pursuing my Master's in IT Management at St. Francis College while working as a Data Analyst Intern at Marra's Pharmacy. My interests lie in research areas spanning cryptography, neural network security, algorithm development, and data analysis.
+                </p>
+                
+                <p style="font-size: 1.1rem; line-height: 1.8;">
+                    My research work ranges from developing novel cryptographic protocols and neural network security mechanisms to creating practical applications for real-world challenges. I've had the opportunity to present my research at official university showcases, including UAlbany's Research & Entrepreneurship Week, and have gained recognition from academic institutions for my innovative work. Additionally, I conducted batch research at Ramaiah University, contributing to various technical projects and research initiatives.
+                </p>
+                
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-number">2</span>
+                        <span class="stat-label">Research Papers</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">2</span>
+                        <span class="stat-label">University Showcases</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="research" class="section">
+            <div class="section-content">
+                <h2>Research Work & Preprints</h2>
+                <div class="research-grid">
+                    <div class="research-item">
+                        <div class="university-badge">UAlbany Showcase</div>
+                        <h3>🔐 Safeguarding Visual Assets: Row and Substitution Cipher Encryption Strategy</h3>
+                        <p><strong>Presented at UAlbany Research & Entrepreneurship Week</strong></p>
+                        <p>Developed an innovative image encryption technique utilizing row and substitution cipher scrambling with Affine cipher for diffusion, successfully reducing pixel correlation for enhanced security.</p>
+                        <p><a href="https://www.linkedin.com/posts/manideep-thotakura_i-wanted-to-extend-my-heartfelt-thanks-for-activity-7191202894069563392-aops" style="color: #64ffda; text-decoration: none;">📄 View showcase</a></p>
+                    </div>
+                    
+                    <div class="research-item">
+                        <div class="university-badge">UAlbany Showcase</div>
+                        <h3>🧠 Low-Cost Reverse Engineering of Neural Network Models through Prediction APIs</h3>
+                        <p><strong>Featured by UAlbany College of Engineering</strong></p>
+                        <p>Research on secure training mechanisms to make reverse engineering attacks mathematically impossible, achieving 85%+ drop in RE accuracy with negligible impact on classifier performance. <em>(Work in progress - not published)</em></p>
+                        <p><a href="https://www.linkedin.com/posts/manideep-thotakura_neuralnetworks-computerscience-computersciencestudent-activity-7119812898968797184-3-VY" style="color: #64ffda; text-decoration: none;">📄 View showcase</a></p>
+                    </div>
+                    
+                    <div class="research-item">
+                        <div class="university-badge">Preprint</div>
+                        <h3>🔢 A New Bijective Pairing Alternative for Encoding Natural Numbers</h3>
+                        <p><strong>Preprint Publication</strong></p>
+                        <p>Novel geometric approach to pairing functions with packing efficiency comparable to classical Cantor pairing function, offering practical applications in data encoding and spatial structures.</p>
+                        <p><a href="https://eprint.iacr.org/2025/1244" style="color: #64ffda; text-decoration: none;">📄 View preprint</a></p>
+                    </div>
+                    
+                    <div class="research-item">
+                        <div class="university-badge">Acknowledgment</div>
+                        <h3>📚 SoK: Model Reverse Engineering Threats for Neural Network Hardware</h3>
+                        <p><strong>Research Contribution Acknowledgment</strong></p>
+                        <p>Acknowledged for assisting with literature collection and research paper compilation for this comprehensive survey on neural network hardware security threats and defenses.</p>
+                        <p><a href="https://eprint.iacr.org/2024/913.pdf" style="color: #64ffda; text-decoration: none;">📄 View paper</a></p>
+                    </div>
+                    
+                    <div class="research-item">
+                        <h3>🔒 Novel Position-Based Commitment Protocol for Secure Multi-Party Verification</h3>
+                        <p><strong>Hydraulic-Inspired Mathematical Obfuscation</strong> <em>(Work in progress)</em></p>
+                        <p>Revolutionary cryptographic protocol achieving O(n) communication complexity compared to traditional O(n³) Byzantine Agreement protocols, with robust resistance against statistical and collusion attacks.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="projects" class="section">
+            <div class="section-content">
+                <h2>Technical Projects</h2>
+                <div class="projects-list">
+                    <div class="project-item">
+                        <div class="project-title">🚶 Obstacle Detection for Blind People</div>
+                        <div class="project-tech">Python</div>
+                        <div class="project-tech">TensorFlow</div>
+                        <div class="project-tech">YOLO</div>
+                        <div class="project-tech">CNN</div>
+                        <p><strong>Team Lead | Grade: A</strong></p>
+                        <p>Developed an AI-powered model to predict object types and distances, providing directional recommendations for visually impaired users. Utilized YOLO algorithm with CNN for multi-object detection in single forward propagation.</p>
+                    </div>
+                    
+                    <div class="project-item">
+                        <div class="project-title">📚 Library Management System</div>
+                        <div class="project-tech">ReactJS</div>
+                        <div class="project-tech">MySQL</div>
+                        <div class="project-tech">AWS</div>
+                        <div class="project-tech">HTML/CSS</div>
+                        <p>Built a comprehensive web application for batch students to access book information and help administrators track available inventory systematically.</p>
+                    </div>
+                    
+                    <div class="project-item">
+                        <div class="project-title">🚗 Number Plate Detector using YOLO</div>
+                        <div class="project-tech">Python</div>
+                        <div class="project-tech">OpenCV</div>
+                        <div class="project-tech">Pytesseract</div>
+                        <div class="project-tech">YOLO</div>
+                        <p>Machine learning model for license plate detection and text extraction using advanced image processing techniques, border cropping, and OCR capabilities.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="skills" class="section">
+            <div class="section-content">
+                <h2>Technical Expertise</h2>
+                <div class="skills-container">
+                    <div class="skill-category">
+                        <h3>Programming Languages</h3>
+                        <div class="skill-item">
+                            <span>Python</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 95%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>Java</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 88%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>C/C++</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 85%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>JavaScript</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 82%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>Scala</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 75%;"></div></div>
+                        </div>
+                    </div>
+                    
+                    <div class="skill-category">
+                        <h3>Data Science & ML</h3>
+                        <div class="skill-item">
+                            <span>TensorFlow</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 90%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>Scikit-Learn</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 88%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>OpenCV</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 85%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>Pandas/NumPy</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 92%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>Matplotlib/Plotly</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 80%;"></div></div>
+                        </div>
+                    </div>
+                    
+                    <div class="skill-category">
+                        <h3>Databases & Cloud</h3>
+                        <div class="skill-item">
+                            <span>MySQL</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 88%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>PostgreSQL</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 82%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>AWS</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 78%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>Docker</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 75%;"></div></div>
+                        </div>
+                    </div>
+                    
+                    <div class="skill-category">
+                        <h3>Development Tools</h3>
+                        <div class="skill-item">
+                            <span>Git/GitHub</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 90%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>VS Code</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 95%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>Power BI</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 80%;"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span>Tableau</span>
+                            <div class="skill-bar"><div class="skill-progress" style="width: 78%;"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="experience" class="section">
+            <div class="section-content">
+                <h2>Professional Experience</h2>
+                <div class="experience-timeline">
+                    <div class="experience-item">
+                        <div class="experience-title">Data Analyst Intern</div>
+                        <div class="experience-company">Marra's Pharmacy | Feb 2025 – Present</div>
+                        <ul style="margin-left: 20px; color: #e0e0e0;">
+                            <li>Collected and analyzed pharmacy sales and inventory data using Python and SQL to support operational decision-making</li>
+                            <li>Developed automated reports to track key performance indicators, enhancing data-driven strategies</li>
+                            <li>Enhanced website functionality using HTML, CSS, and JavaScript, leading to increased user engagement</li>
+                            <li>Implemented responsive design principles to improve overall user experience</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="experience-item">
+                        <div class="experience-title">Team Lead - BTech Research Project</div>
+                        <div class="experience-company">Ramaiah University of Applied Sciences | Feb 2022 – May 2022</div>
+                        <ul style="margin-left: 20px; color: #e0e0e0;">
+                            <li>Led team for "Obstacle Detection For Blind People" major project</li>
+                            <li>Managed project timeline, resource allocation, and team coordination</li>
+                            <li>Successfully delivered project with <strong>Grade A</strong> recognition</li>
+                            <li>Presented findings to university faculty and industry experts</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="highlight-box">
+                    <h3>🎓 Academic Journey</h3>
+                    <p><strong>Master of IT Management</strong> - St. Francis College, NY (2024-Present)<br>
+                    <strong>Master of Science - Computer Science</strong> - University at Albany (2022-2023) | GPA: 3.55/4<br>
+                    <strong>Bachelor of Technology - CSE</strong> - Ramaiah University (2018-2022) | CGPA: 8.34/10</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="section">
+            <div class="section-content">
+                <h2>Let's Connect</h2>
+                <p style="font-size: 1.2rem; margin-bottom: 40px; text-align: center;">
+                    Interested in collaboration, research opportunities, or discussing innovative tech solutions? Let's talk!
+                </p>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; margin-top: 40px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">📧</div>
+                        <h3 style="color: #64ffda; margin-bottom: 10px;">Email</h3>
+                        <p>manideep9949466287@gmail.com</p>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">💼</div>
+                        <h3 style="color: #64ffda; margin-bottom: 10px;">LinkedIn</h3>
+                        <p>linkedin.com/in/manideep-thotakura</p>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">📍</div>
+                        <h3 style="color: #64ffda; margin-bottom: 10px;">Location</h3>
+                        <p>Albany, NY 12203</p>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 30px; border-radius: 15px; margin-top: 50px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.1);">
+                    <h3 style="color: #64ffda; margin-bottom: 15px;">Open to Opportunities</h3>
+                    <p>Full-Time Positions • Research Collaborations • Internships • Freelance Projects • Tech Consulting</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Three.js 3D Background
+        let scene, camera, renderer, particles, cube, torus, sphere;
+        let mouseX = 0, mouseY = 0;
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0);
+            document.getElementById('threejs-container').appendChild(renderer.domElement);
+
+            // Create particle system
+            const particleGeometry = new THREE.BufferGeometry();
+            const particleCount = 1500;
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+
+            for(let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 200;
+                positions[i + 1] = (Math.random() - 0.5) * 200;
+                positions[i + 2] = (Math.random() - 0.5) * 200;
+                
+                colors[i] = Math.random() * 0.5 + 0.5;
+                colors[i + 1] = Math.random() * 0.5 + 0.5;
+                colors[i + 2] = 1;
+            }
+
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const particleMaterial = new THREE.PointsMaterial({
+                size: 2,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            particles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particles);
+
+            // Create floating geometric shapes
+            const cubeGeometry = new THREE.BoxGeometry(5, 5, 5);
+            const cubeMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x64ffda, 
+                transparent: true, 
+                opacity: 0.3,
+                wireframe: true 
+            });
+            cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-30, 10, -50);
+            scene.add(cube);
+
+            const torusGeometry = new THREE.TorusGeometry(8, 3, 8, 20);
+            const torusMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x00bcd4, 
+                transparent: true, 
+                opacity: 0.3,
+                wireframe: true 
+            });
+            torus = new THREE.Mesh(torusGeometry, torusMaterial);
+            torus.position.set(40, -20, -60);
+            scene.add(torus);
+
+            // Add a sphere
+            const sphereGeometry = new THREE.SphereGeometry(6, 32, 32);
+            const sphereMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x3f51b5, 
+                transparent: true, 
+                opacity: 0.25,
+                wireframe: true 
+            });
+            sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            sphere.position.set(0, 30, -70);
+            scene.add(sphere);
+
+            camera.position.z = 50;
+
+            // Mouse interaction
+            document.addEventListener('mousemove', onMouseMove, false);
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        function onMouseMove(event) {
+            mouseX = (event.clientX - window.innerWidth / 2) * 0.01;
+            mouseY = (event.clientY - window.innerHeight / 2) * 0.01;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate particles
+            particles.rotation.x += 0.0008;
+            particles.rotation.y += 0.001;
+
+            // Animate geometric shapes
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+            torus.rotation.x += 0.005;
+            torus.rotation.z += 0.01;
+            sphere.rotation.y += 0.008;
+            sphere.rotation.z += 0.003;
+
+            // Mouse interaction
+            camera.position.x += (mouseX - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+
+            renderer.render(scene, camera);
+        }
+
+        // Smooth scrolling navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                
+                // Update active nav
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Interactive particles on mouse click
+        document.addEventListener('click', function(e) {
+            for(let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.className = 'interactive-particle';
+                    particle.style.left = e.clientX + (Math.random() - 0.5) * 30 + 'px';
+                    particle.style.top = e.clientY + (Math.random() - 0.5) * 30 + 'px';
+                    document.body.appendChild(particle);
+                    
+                    setTimeout(() => {
+                        particle.remove();
+                    }, 2000);
+                }, i * 80);
+            }
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'fadeInUp 1s ease-out forwards';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.section-content').forEach(section => {
+            observer.observe(section);
+        });
+
+        // Initialize Three.js
+        init();
+        animate();
+
+        // Add CSS for fade in animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .section-content {
+                opacity: 0;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Update active nav on scroll
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const floatingNavItems = document.querySelectorAll('.floating-nav-item');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (window.pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            // Update main nav
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+
+            // Update floating nav
+            floatingNavItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('href') === `#${current}`) {
+                    item.classList.add('active');
+                }
+            });
+        });
+
+        // Floating Navigation Functionality
+        const floatingNavBtn = document.getElementById('floatingNavBtn');
+        const floatingNavMenu = document.getElementById('floatingNavMenu');
+        const floatingNavIcon = floatingNavBtn.querySelector('span');
+        
+        floatingNavBtn.addEventListener('click', () => {
+            const isActive = floatingNavBtn.classList.contains('active');
+            
+            if (isActive) {
+                floatingNavBtn.classList.remove('active');
+                floatingNavMenu.classList.remove('active');
+                floatingNavIcon.textContent = '☰';
+            } else {
+                floatingNavBtn.classList.add('active');
+                floatingNavMenu.classList.add('active');
+                floatingNavIcon.textContent = '×';
+            }
+        });
+
+        // Close floating nav when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.floating-nav')) {
+                floatingNavBtn.classList.remove('active');
+                floatingNavMenu.classList.remove('active');
+                floatingNavIcon.textContent = '☰';
+            }
+        });
+
+        // Floating nav item click handling
+        document.querySelectorAll('.floating-nav-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                
+                // Close the floating menu
+                floatingNavBtn.classList.remove('active');
+                floatingNavMenu.classList.remove('active');
+                floatingNavIcon.textContent = '☰';
+            });
+        });
+    </script>
+</body>
+</html>
