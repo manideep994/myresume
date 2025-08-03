@@ -206,7 +206,13 @@
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     }
 }
-
+/* Mobile override: 1 per row */
+@media (max-width: 768px) {
+    .projects-list {
+        display: grid !important;        /* ensure override */
+        grid-template-columns: 1fr !important;
+    }
+}
         .research-item {
             background: rgba(255, 255, 255, 0.05);
             padding: 30px;
