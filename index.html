@@ -196,10 +196,16 @@
 
         .research-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(2, 1fr); /* Always 2 items per row */
             gap: 30px;
             margin-top: 30px;
         }
+@media (max-width: 768px) {
+    .research-grid, 
+    .skills-container,.projects-list {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+}
 
         .research-item {
             background: rgba(255, 255, 255, 0.05);
@@ -236,7 +242,8 @@
 
         .skills-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+grid-template-columns: repeat(2, 1fr); /* Always 2 items per row */
+            
             gap: 30px;
             margin-top: 30px;
         }
@@ -290,6 +297,11 @@
 
         .projects-list {
             space-y: 20px;
+display: grid;
+grid-template-columns: repeat(2, 1fr); /* Always 2 items per row */
+            
+            gap: 30px;
+            margin-top: 30px;
         }
 
         .project-item {
@@ -639,6 +651,7 @@
                 right: -10px;
             }
         }
+
     </style>
 </head>
 <body>
@@ -724,15 +737,62 @@
                         <h3>🔐 Safeguarding Visual Assets: Row and Substitution Cipher Encryption Strategy</h3>
                         <p><strong>Presented at UAlbany Research & Entrepreneurship Week</strong></p>
                         <p>Developed an innovative image encryption technique utilizing row and substitution cipher scrambling with Affine cipher for diffusion, successfully reducing pixel correlation for enhanced security.</p>
-                        <p><a href="https://www.linkedin.com/posts/manideep-thotakura_i-wanted-to-extend-my-heartfelt-thanks-for-activity-7191202894069563392-aops" style="color: #64ffda; text-decoration: none;">📄 View showcase</a></p>
+                        
+                       <p>
+  <a href="javascript:void(0)" 
+     onclick="toggleImage()" 
+     style="color: #64ffda; text-decoration: none; cursor: pointer;">
+    📷 View LinkedIn Image
+  </a>
+</p>
+
+<div id="linkedinImage" style="display:none; margin-top:15px;">
+  <img src="https://media.licdn.com/dms/image/v2/D5622AQHRD0Q8-xC6EA/feedshare-shrink_800/feedshare-shrink_800/0/1714516374570?e=1756944000&v=beta&t=cq8tPx3JxgWJuo5vHjJvxAmqalbdzmUkQDqmS5pWkss"
+       alt="LinkedIn Image"
+       style="max-width:100%; height:auto; border:1px solid #ccc; border-radius:8px;">
+</div>
+
+<script>
+function toggleImage() {
+  const imgDiv = document.getElementById("linkedinImage");
+  imgDiv.style.display = (imgDiv.style.display === "none") ? "block" : "none";
+}
+</script>
+
+        
                     </div>
-                    
+  <script>
+function toggleImage() {
+  const imgDiv = document.getElementById("linkedinImage");
+  imgDiv.style.display = (imgDiv.style.display === "none") ? "block" : "none";
+}
+</script>
                     <div class="research-item">
                         <div class="university-badge">UAlbany Showcase</div>
                         <h3>🧠 Low-Cost Reverse Engineering of Neural Network Models through Prediction APIs</h3>
                         <p><strong>Featured by UAlbany College of Engineering</strong></p>
                         <p>Research on secure training mechanisms to make reverse engineering attacks mathematically impossible, achieving 85%+ drop in RE accuracy with negligible impact on classifier performance. <em>(Work in progress - not published)</em></p>
-                        <p><a href="https://www.linkedin.com/posts/manideep-thotakura_neuralnetworks-computerscience-computersciencestudent-activity-7119812898968797184-3-VY" style="color: #64ffda; text-decoration: none;">📄 View showcase</a></p>
+                        <p>
+  <a href="javascript:void(0)" 
+     onclick="toggleImage1()" 
+     style="color: #64ffda; text-decoration: none; cursor: pointer;">
+    📷 View LinkedIn Image
+  </a>
+</p>
+
+<div id="linkedinImage1" style="display:none; margin-top:15px;">
+  <img src="https://media.licdn.com/dms/image/v2/D4E22AQFe91bQQCQNiw/feedshare-shrink_1280/feedshare-shrink_1280/0/1697490794974?e=1756944000&v=beta&t=IfbPVobRrBjYEfRNhdwp8qiW5naWpr3-bU--YZJ6WQQ"
+       alt="LinkedIn Image"
+       style="max-width:100%; height:auto; border:1px solid #ccc; border-radius:8px;">
+</div>
+
+<script>
+function toggleImage1() {
+  const imgDiv = document.getElementById("linkedinImage1");
+  imgDiv.style.display = (imgDiv.style.display === "none") ? "block" : "none";
+}
+</script>
+
                     </div>
                     
                     <div class="research-item">
