@@ -3,23 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green Harvest Foods - Indian Pickles & Traditional Foods</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Green Harvest - Authentic Indian Pickles & Foods</title>
     <style>
-        :root {
-            --primary: #2d5016;
-            --primary-light: #4a7c2c;
-            --secondary: #e8b923;
-            --accent: #d32f2f;
-            --light: #f9f7f2;
-            --dark: #1a1a1a;
-            --gray: #666;
-            --light-gray: #e9e9e9;
-            --border-radius: 12px;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            --transition: all 0.3s ease;
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -27,1976 +12,1024 @@
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: var(--light);
-            color: var(--dark);
-            line-height: 1.6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
         }
 
-        /* Header */
-        .header {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: white;
-            box-shadow: var(--shadow);
-            padding: 12px 0;
+        .offers-banner {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            animation: pulse 2s infinite;
         }
 
-        .header-container {
-            max-width: 1200px;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.9; }
+        }
+
+        header {
+            background: linear-gradient(135deg, #2d5016 0%, #4a7c2c 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 0 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon {
-            font-size: 28px;
-            color: var(--primary);
-        }
-
-        .logo-text h1 {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .logo-text p {
-            font-size: 11px;
-            color: var(--gray);
-            margin-top: 2px;
+            font-size: 1.8rem;
+            font-weight: bold;
         }
 
         .header-actions {
             display: flex;
-            align-items: center;
-            gap: 16px;
+            gap: 1rem;
         }
 
-        .cart-btn {
-            position: relative;
-            background: none;
+        .cart-btn, .contact-btn {
+            background: white;
+            color: #2d5016;
             border: none;
-            font-size: 22px;
-            color: var(--primary);
+            padding: 0.7rem 1.5rem;
+            border-radius: 25px;
             cursor: pointer;
-            padding: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s;
+            text-decoration: none;
+        }
+
+        .cart-btn:hover, .contact-btn:hover {
+            transform: scale(1.05);
         }
 
         .cart-count {
-            position: absolute;
-            top: -2px;
-            right: -2px;
-            background: var(--accent);
+            background: #e74c3c;
             color: white;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+
+        .hero-section h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-section p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+        }
+
+        .promo-carousel {
+            max-width: 1400px;
+            margin: -2rem auto 2rem;
+            padding: 0 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .promo-track {
+            display: flex;
+            transition: transform 0.5s ease;
+        }
+
+        .promo-card {
+            min-width: 100%;
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
+            gap: 2rem;
+            flex-wrap: wrap;
         }
 
-        .menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 22px;
-            color: var(--primary);
-            cursor: pointer;
+        .promo-card .icon {
+            font-size: 3rem;
         }
 
-        /* Banner */
-        .banner {
-            max-width: 1200px;
-            margin: 16px auto;
-            padding: 0 16px;
-            position: relative;
-            overflow: hidden;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            height: 180px;
+        .promo-content {
+            flex: 1;
+            min-width: 200px;
         }
 
-        .banner-slide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 24px;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            border-radius: var(--border-radius);
+        .promo-content h3 {
+            color: #2d5016;
+            margin-bottom: 0.3rem;
+            font-size: 1.3rem;
         }
 
-        .banner-slide.active {
-            opacity: 1;
+        .promo-content p {
+            color: #666;
+            font-size: 0.95rem;
         }
 
-        .banner-slide:nth-child(1) { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .banner-slide:nth-child(2) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .banner-slide:nth-child(3) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-
-        .banner-title {
-            font-size: 22px;
-            font-weight: 700;
+        .badge {
+            display: inline-block;
+            background: #e74c3c;
             color: white;
-            margin-bottom: 8px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
         }
 
-        .banner-subtitle {
-            font-size: 14px;
-            color: rgba(255,255,255,0.9);
-            max-width: 80%;
-        }
-
-        .banner-dots {
-            position: absolute;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
+        .promo-dots {
             display: flex;
+            justify-content: center;
             gap: 8px;
+            margin-top: 1rem;
         }
 
-        .banner-dot {
+        .promo-dot {
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.5);
+            background: #ddd;
             cursor: pointer;
-            transition: var(--transition);
+            transition: background 0.3s;
         }
 
-        .banner-dot.active {
+        .promo-dot.active {
+            background: #2d5016;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem 3rem;
+        }
+
+        .filters {
             background: white;
-            transform: scale(1.2);
-        }
-
-        /* Categories */
-        .categories {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 0 16px;
-        }
-
-        .categories-scroll {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 8px;
-            scrollbar-width: none;
-        }
-
-        .categories-scroll::-webkit-scrollbar {
-            display: none;
-        }
-
-        .category-btn {
-            flex-shrink: 0;
-            background: white;
-            border: 1px solid var(--light-gray);
-            border-radius: 50px;
-            padding: 10px 20px;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--gray);
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .category-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        .category-btn i {
-            font-size: 16px;
-        }
-
-        /* Filters */
-        .filters-container {
-            max-width: 1200px;
-            margin: 16px auto;
-            padding: 0 16px;
-        }
-
-        .filters-toggle {
-            width: 100%;
-            background: white;
-            border: 1px solid var(--light-gray);
-            border-radius: var(--border-radius);
-            padding: 14px 20px;
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--dark);
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: var(--transition);
-        }
-
-        .filters-toggle:hover {
-            border-color: var(--primary);
-        }
-
-        .filters-toggle i {
-            transition: var(--transition);
-        }
-
-        .filters-toggle.active i {
-            transform: rotate(180deg);
-        }
-
-        .filters-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s ease;
-            background: white;
-            border-radius: 0 0 var(--border-radius) var(--border-radius);
-            margin-top: -1px;
-            border: 1px solid var(--light-gray);
-            border-top: none;
-        }
-
-        .filters-content.show {
-            max-height: 500px;
-        }
-
-        .filters-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 20px;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .filter-group {
-            margin-bottom: 16px;
-        }
-
-        .filter-label {
-            display: block;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 8px;
-        }
-
-        .filter-select, .filter-input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--light-gray);
-            border-radius: 8px;
-            font-size: 14px;
-            color: var(--dark);
-            transition: var(--transition);
-        }
-
-        .filter-select:focus, .filter-input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .price-inputs {
             display: flex;
-            gap: 10px;
-            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
-        .price-inputs input {
-            flex: 1;
-        }
-
-        .filter-actions {
-            grid-column: 1 / -1;
-            display: flex;
-            gap: 12px;
-            margin-top: 10px;
-        }
-
-        .btn {
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
+        .filter-btn {
+            padding: 0.7rem 1.5rem;
+            border: 2px solid #2d5016;
+            background: white;
+            color: #2d5016;
+            border-radius: 25px;
             cursor: pointer;
-            transition: var(--transition);
-            border: none;
+            font-weight: 600;
+            transition: all 0.3s;
         }
 
-        .btn-primary {
-            flex: 2;
-            background: var(--primary);
+        .filter-btn:hover, .filter-btn.active {
+            background: #2d5016;
             color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-light);
-        }
-
-        .btn-secondary {
-            flex: 1;
-            background: var(--light-gray);
-            color: var(--dark);
-        }
-
-        .btn-secondary:hover {
-            background: #d5d5d5;
-        }
-
-        /* Products */
-        .products-container {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 0 16px;
         }
 
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 16px;
-        }
-
-        @media (min-width: 768px) {
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-                gap: 20px;
-            }
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
         }
 
         .product-card {
             background: white;
-            border-radius: var(--border-radius);
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
             position: relative;
         }
 
         .product-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
         }
 
-        .product-image {
+        .new-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #e74c3c;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .image-gallery {
             position: relative;
-            height: 140px;
+            width: 100%;
+            height: 220px;
             overflow: hidden;
-            background: linear-gradient(135deg, #f5f0e6 0%, #e8dfc8 100%);
         }
 
-        .image-slider {
+        .gallery-track {
             display: flex;
-            height: 100%;
             transition: transform 0.3s ease;
+            height: 100%;
         }
 
-        .image-slide {
+        .gallery-image {
             min-width: 100%;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 60px;
-            user-select: none;
+            font-size: 5rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
 
-        .slider-nav {
+        .gallery-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.9);
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+            z-index: 10;
+        }
+
+        .gallery-nav:hover {
+            background: white;
+        }
+
+        .gallery-prev {
+            left: 10px;
+        }
+
+        .gallery-next {
+            right: 10px;
+        }
+
+        .gallery-dots {
             position: absolute;
             bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 6px;
+            gap: 5px;
+            z-index: 10;
         }
 
-        .slider-dot {
+        .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.6);
-            transition: var(--transition);
+            background: rgba(255,255,255,0.5);
+            cursor: pointer;
+            transition: background 0.3s;
         }
 
-        .slider-dot.active {
+        .dot.active {
             background: white;
-            transform: scale(1.2);
-        }
-
-        .product-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: var(--primary);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: 700;
-        }
-
-        .product-badge.nonveg {
-            background: var(--accent);
         }
 
         .product-info {
-            padding: 16px;
+            padding: 1.2rem;
         }
 
         .product-name {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--dark);
-            margin-bottom: 6px;
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #2d5016;
+            margin-bottom: 0.8rem;
         }
 
-        .product-desc {
-            font-size: 12px;
-            color: var(--gray);
-            margin-bottom: 10px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        .product-type {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
         }
 
-        .product-price {
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--primary);
-            margin-bottom: 12px;
+        .veg {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .non-veg {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .paste, .podi, .sweet {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .price-options {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .price-option {
+            flex: 1;
+            text-align: center;
+            padding: 0.6rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .price-option:hover, .price-option.selected {
+            border-color: #2d5016;
+            background: #f0f8f0;
+        }
+
+        .price-option .size {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .price-option .price {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2d5016;
+            margin-top: 0.2rem;
         }
 
         .product-actions {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .size-select {
-            padding: 6px 10px;
-            border: 1px solid var(--light-gray);
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--dark);
-            background: white;
-            cursor: pointer;
+            gap: 0.5rem;
         }
 
         .add-to-cart {
-            background: var(--primary);
+            flex: 1;
+            padding: 0.8rem;
+            background: #2d5016;
             color: white;
             border: none;
-            border-radius: 6px;
-            padding: 8px 16px;
-            font-size: 14px;
-            font-weight: 600;
+            border-radius: 8px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: var(--transition);
+            font-weight: bold;
+            font-size: 1rem;
+            transition: background 0.3s;
         }
 
         .add-to-cart:hover {
-            background: var(--primary-light);
+            background: #1f3910;
         }
 
-        /* Product Modal */
-        .product-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: var(--transition);
-            padding: 20px;
-        }
-
-        .product-modal.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: var(--border-radius);
-            width: 100%;
-            max-width: 800px;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-            transform: translateY(20px);
-            transition: transform 0.3s ease;
-        }
-
-        .product-modal.active .modal-content {
-            transform: translateY(0);
-        }
-
-        .close-modal {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: rgba(255,255,255,0.9);
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            font-size: 22px;
-            cursor: pointer;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-image {
-            height: 250px;
-            background: linear-gradient(135deg, #f5f0e6 0%, #e8dfc8 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 100px;
-        }
-
-        .modal-info {
-            padding: 24px;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 16px;
-        }
-
-        .modal-title {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--dark);
-            margin-right: 16px;
-        }
-
-        .modal-category {
-            display: inline-block;
-            background: var(--light-gray);
-            color: var(--gray);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-top: 8px;
-        }
-
-        .modal-price {
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--primary);
-            margin-bottom: 20px;
-        }
-
-        .modal-section {
-            margin-bottom: 24px;
-        }
-
-        .section-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--dark);
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--light-gray);
-        }
-
-        .modal-desc {
-            color: var(--gray);
-            line-height: 1.6;
-        }
-
-        .ingredients-list {
-            list-style: none;
-        }
-
-        .ingredients-list li {
-            padding: 8px 0;
-            border-bottom: 1px dashed var(--light-gray);
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .ingredients-list li:last-child {
-            border-bottom: none;
-        }
-
-        .ingredient-name {
-            font-weight: 600;
-        }
-
-        .modal-sizes {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .modal-size {
-            padding: 10px 20px;
-            border: 2px solid var(--light-gray);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: var(--transition);
-            text-align: center;
-            min-width: 80px;
-        }
-
-        .modal-size.active {
-            border-color: var(--primary);
-            background: rgba(45, 80, 22, 0.05);
-        }
-
-        .size-label {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .size-price {
-            font-size: 16px;
-            font-weight: 800;
-            color: var(--primary);
-            margin-top: 4px;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 16px;
-            margin-top: 30px;
-        }
-
-        .modal-actions .add-to-cart {
-            flex: 2;
-            justify-content: center;
-            padding: 16px;
-            font-size: 16px;
-        }
-
-        .btn-outline {
-            flex: 1;
-            background: white;
-            border: 2px solid var(--primary);
-            color: var(--primary);
-            border-radius: 8px;
-            padding: 16px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .btn-outline:hover {
-            background: rgba(45, 80, 22, 0.05);
-        }
-
-        /* Cart Sidebar */
-        .cart-sidebar {
-            position: fixed;
-            top: 0;
-            right: -100%;
-            width: 100%;
-            height: 100%;
-            background: white;
-            z-index: 1001;
-            transition: var(--transition);
-            display: flex;
-            flex-direction: column;
-            max-width: 400px;
-        }
-
-        @media (min-width: 768px) {
-            .cart-sidebar {
-                width: 400px;
-            }
-        }
-
-        .cart-sidebar.active {
-            right: 0;
-        }
-
-        .cart-header {
-            background: var(--primary);
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .cart-title {
-            font-size: 20px;
-            font-weight: 700;
-        }
-
-        .close-cart {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 28px;
-            cursor: pointer;
-        }
-
-        .cart-items {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        .cart-empty {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--gray);
-        }
-
-        .cart-empty i {
-            font-size: 60px;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
-        .cart-empty p {
-            font-size: 18px;
-            margin-bottom: 16px;
-        }
-
-        .cart-item {
-            display: flex;
-            gap: 16px;
-            padding: 16px;
-            background: var(--light);
-            border-radius: var(--border-radius);
-            margin-bottom: 16px;
-        }
-
-        .cart-item-image {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #f5f0e6 0%, #e8dfc8 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            flex-shrink: 0;
-        }
-
-        .cart-item-details {
-            flex: 1;
-        }
-
-        .cart-item-name {
-            font-weight: 700;
-            margin-bottom: 4px;
-            color: var(--dark);
-        }
-
-        .cart-item-size {
-            font-size: 12px;
-            color: var(--gray);
-            margin-bottom: 8px;
-        }
-
-        .cart-item-controls {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .cart-item-quantity {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .qty-btn {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: 1px solid var(--light-gray);
-            background: white;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .cart-item-price {
-            font-weight: 800;
-            color: var(--primary);
-        }
-
-        .remove-item {
-            background: none;
-            border: none;
-            color: var(--accent);
-            font-size: 12px;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-
-        .cart-footer {
-            padding: 20px;
-            border-top: 1px solid var(--light-gray);
-            background: white;
-        }
-
-        .cart-total {
-            display: flex;
-            justify-content: space-between;
-            font-size: 20px;
-            font-weight: 800;
-            margin-bottom: 20px;
-            color: var(--dark);
-        }
-
-        .cart-total span:last-child {
-            color: var(--primary);
-        }
-
-        .checkout-btn {
-            width: 100%;
-            background: var(--primary);
+        .whatsapp-quick {
+            padding: 0.8rem;
+            background: #25D366;
             color: white;
             border: none;
             border-radius: 8px;
-            padding: 16px;
-            font-size: 16px;
-            font-weight: 700;
             cursor: pointer;
+            font-size: 1.2rem;
+            transition: background 0.3s;
+            text-decoration: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            transition: var(--transition);
+            min-width: 45px;
         }
 
-        .checkout-btn:hover {
-            background: var(--primary-light);
+        .whatsapp-quick:hover {
+            background: #1ea952;
         }
 
-        .clear-cart {
-            width: 100%;
-            background: var(--light-gray);
-            color: var(--dark);
-            border: none;
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .clear-cart:hover {
-            background: #d5d5d5;
-        }
-
-        /* Overlay */
-        .overlay {
+        .cart-modal {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.5);
-            z-index: 999;
-            opacity: 0;
-            visibility: hidden;
-            transition: var(--transition);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
         }
 
-        .overlay.active {
-            opacity: 1;
-            visibility: visible;
+        .cart-modal.active {
+            display: flex;
         }
 
-        /* Footer */
-        .footer {
-            background: var(--dark);
+        .cart-content {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 15px;
+            padding: 2rem;
+        }
+
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .close-cart {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .cart-item-info h4 {
+            color: #2d5016;
+            margin-bottom: 0.3rem;
+        }
+
+        .cart-item-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .cart-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .qty-btn {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #2d5016;
+            background: white;
+            color: #2d5016;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .cart-total {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid #e0e0e0;
+            text-align: right;
+        }
+
+        .cart-total h3 {
+            font-size: 1.5rem;
+            color: #2d5016;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #25D366;
             color: white;
-            padding: 40px 16px;
-            margin-top: 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
         }
 
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
+        .checkout-btn:hover {
+            background: #1ea952;
+        }
+
+        .empty-cart {
             text-align: center;
+            padding: 3rem 1rem;
+            color: #666;
         }
 
-        .footer-logo {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 16px;
+        footer {
+            background: #2d5016;
             color: white;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 3rem;
         }
 
-        .footer-tagline {
-            color: rgba(255,255,255,0.7);
-            margin-bottom: 24px;
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
+        .footer-contact {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
-        .copyright {
-            color: rgba(255,255,255,0.5);
-            font-size: 14px;
-            margin-top: 24px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+        .footer-contact a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            transition: background 0.3s;
         }
 
-        /* Responsive */
+        .footer-contact a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
         @media (max-width: 768px) {
-            .menu-toggle {
-                display: block;
+            .header-content {
+                justify-content: center;
             }
-            
-            .banner {
-                height: 150px;
-            }
-            
-            .banner-title {
-                font-size: 18px;
-            }
-            
-            .modal-content {
-                max-height: 95vh;
-            }
-            
-            .modal-image {
-                height: 200px;
-                font-size: 80px;
-            }
-            
-            .modal-title {
-                font-size: 20px;
-            }
-            
-            .modal-actions {
-                flex-direction: column;
-            }
-            
-            .filters-grid {
-                grid-template-columns: 1fr;
-                gap: 16px;
-            }
-        }
 
-        @media (max-width: 480px) {
+            .header-actions {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .hero-section h1 {
+                font-size: 1.8rem;
+            }
+            
             .products-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 12px;
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             }
-            
-            .product-image {
-                height: 120px;
+
+            .promo-card {
+                flex-direction: column;
+                text-align: center;
+                padding: 1.2rem;
             }
-            
-            .image-slide {
-                font-size: 50px;
-            }
-            
-            .product-info {
-                padding: 12px;
-            }
-            
-            .product-name {
-                font-size: 14px;
-            }
-            
-            .product-price {
-                font-size: 18px;
+
+            .promo-content h3 {
+                font-size: 1.1rem;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="header-container">
+    <div class="offers-banner">
+        🎉 Special Offer: 20% OFF on all Pickles | Free Delivery on orders above ₹1000 🎉
+    </div>
+
+    <header>
+        <div class="header-content">
             <div class="logo">
-                <div class="logo-icon">🌿</div>
-                <div class="logo-text">
-                    <h1>Green Harvest</h1>
-                    <p>Authentic Indian Pickles & Foods</p>
-                </div>
+                🌿 Green Harvest
             </div>
             <div class="header-actions">
+                <a href="https://wa.me/919876543210" class="contact-btn" target="_blank">
+                    📱 Contact Us
+                </a>
                 <button class="cart-btn" onclick="toggleCart()">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count" id="cartCount">0</span>
-                </button>
-                <button class="menu-toggle" onclick="toggleMobileMenu()">
-                    <i class="fas fa-bars"></i>
+                    🛒 Cart <span class="cart-count" id="cartCount">0</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Banner -->
-    <section class="banner" id="banner">
-        <div class="banner-slide active">
-            <div class="banner-title">🥭 Fresh Homemade Pickles</div>
-            <div class="banner-subtitle">Enjoy 20% OFF on all pickles this week. Limited time offer!</div>
-        </div>
-        <div class="banner-slide">
-            <div class="banner-title">🌰 Traditional Podis</div>
-            <div class="banner-subtitle">Buy 2 Get 1 Free on all podis and spice mixes</div>
-        </div>
-        <div class="banner-slide">
-            <div class="banner-title">🍬 Sweet Delights</div>
-            <div class="banner-subtitle">New arrivals: Traditional Indian sweets made with pure ghee</div>
-        </div>
-        <div class="banner-dots" id="bannerDots"></div>
-    </section>
+    <div class="hero-section">
+        <h1>Authentic Indian Pickles & Traditional Foods</h1>
+        <p>Homemade with love using traditional recipes passed down through generations</p>
+    </div>
 
-    <!-- Categories -->
-    <section class="categories">
-        <div class="categories-scroll" id="categoriesScroll">
-            <button class="category-btn active" data-category="all">
-                <i class="fas fa-th-large"></i> All
-            </button>
-            <button class="category-btn" data-category="pickles">
-                <i class="fas fa-jar"></i> Pickles
-            </button>
-            <button class="category-btn" data-category="podis">
-                <i class="fas fa-mortar-pestle"></i> Podis
-            </button>
-            <button class="category-btn" data-category="sweets">
-                <i class="fas fa-candy-cane"></i> Sweets
-            </button>
-            <button class="category-btn" data-category="spreads">
-                <i class="fas fa-bread-slice"></i> Spreads
-            </button>
-            <button class="category-btn" data-category="snacks">
-                <i class="fas fa-cookie"></i> Snacks
-            </button>
-        </div>
-    </section>
-
-    <!-- Filters -->
-    <section class="filters-container">
-        <button class="filters-toggle" id="filtersToggle">
-            <span>Filter Products</span>
-            <i class="fas fa-chevron-down"></i>
-        </button>
-        <div class="filters-content" id="filtersContent">
-            <div class="filters-grid">
-                <div class="filter-group">
-                    <label class="filter-label">Type</label>
-                    <select class="filter-select" id="typeFilter">
-                        <option value="all">All Types</option>
-                        <option value="veg">Vegetarian</option>
-                        <option value="nonveg">Non-Vegetarian</option>
-                    </select>
+    <div class="promo-carousel">
+        <div class="promo-track" id="promoTrack">
+            <div class="promo-card">
+                <div class="icon">🥭</div>
+                <div class="promo-content">
+                    <h3>Fresh Homemade Pickles</h3>
+                    <p>Made with fresh ingredients and authentic spices</p>
                 </div>
-                <div class="filter-group">
-                    <label class="filter-label">Price Range</label>
-                    <div class="price-inputs">
-                        <input type="number" class="filter-input" id="minPrice" placeholder="Min" min="0">
-                        <span>-</span>
-                        <input type="number" class="filter-input" id="maxPrice" placeholder="Max" min="0">
-                    </div>
+                <span class="badge">20% OFF</span>
+            </div>
+            <div class="promo-card">
+                <div class="icon">🌰</div>
+                <div class="promo-content">
+                    <h3>Traditional Podis</h3>
+                    <p>Buy 2 Get 1 Free on all podis and spice mixes</p>
                 </div>
-                <div class="filter-group">
-                    <label class="filter-label">Sort By</label>
-                    <select class="filter-select" id="sortFilter">
-                        <option value="featured">Featured</option>
-                        <option value="price-low">Price: Low to High</option>
-                        <option value="price-high">Price: High to Low</option>
-                        <option value="name">Name: A to Z</option>
-                    </select>
+                <span class="badge">BUY 2 GET 1</span>
+            </div>
+            <div class="promo-card">
+                <div class="icon">🍬</div>
+                <div class="promo-content">
+                    <h3>Sweet Delights</h3>
+                    <p>New arrivals: Traditional sweets made with pure ghee</p>
                 </div>
-                <div class="filter-actions">
-                    <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
-                    <button class="btn btn-secondary" onclick="resetFilters()">Reset</button>
-                </div>
+                <span class="badge">NEW</span>
             </div>
         </div>
-    </section>
+        <div class="promo-dots">
+            <div class="promo-dot active" onclick="goToPromo(0)"></div>
+            <div class="promo-dot" onclick="goToPromo(1)"></div>
+            <div class="promo-dot" onclick="goToPromo(2)"></div>
+        </div>
+    </div>
 
-    <!-- Products Grid -->
-    <section class="products-container">
+    <div class="container">
+        <div class="filters">
+            <div class="filter-group">
+                <button class="filter-btn active" onclick="filterProducts('all')">All Products</button>
+                <button class="filter-btn" onclick="filterProducts('veg')">Veg Pickles</button>
+                <button class="filter-btn" onclick="filterProducts('non-veg')">Non-Veg Pickles</button>
+                <button class="filter-btn" onclick="filterProducts('paste')">Pastes</button>
+                <button class="filter-btn" onclick="filterProducts('podi')">Podis</button>
+                <button class="filter-btn" onclick="filterProducts('sweet')">Sweets</button>
+            </div>
+        </div>
+
         <div class="products-grid" id="productsGrid"></div>
-    </section>
-
-    <!-- Product Modal -->
-    <div class="product-modal" id="productModal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeModal()">×</button>
-            <div class="modal-image" id="modalImage">
-                <!-- Product image will be inserted here -->
-            </div>
-            <div class="modal-info">
-                <div class="modal-header">
-                    <div>
-                        <h2 class="modal-title" id="modalTitle"></h2>
-                        <span class="modal-category" id="modalCategory"></span>
-                    </div>
-                    <div class="modal-price" id="modalPrice"></div>
-                </div>
-                
-                <div class="modal-section">
-                    <h3 class="section-title">Description</h3>
-                    <p class="modal-desc" id="modalDesc"></p>
-                </div>
-                
-                <div class="modal-section">
-                    <h3 class="section-title">Ingredients</h3>
-                    <ul class="ingredients-list" id="modalIngredients"></ul>
-                </div>
-                
-                <div class="modal-section">
-                    <h3 class="section-title">Available Sizes</h3>
-                    <div class="modal-sizes" id="modalSizes"></div>
-                </div>
-                
-                <div class="modal-actions">
-                    <button class="btn-outline" onclick="closeModal()">Continue Shopping</button>
-                    <button class="add-to-cart" id="modalAddToCart">
-                        <i class="fas fa-cart-plus"></i> Add to Cart
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <!-- Cart Sidebar -->
-    <div class="cart-sidebar" id="cartSidebar">
-        <div class="cart-header">
-            <h2 class="cart-title">Your Cart</h2>
-            <button class="close-cart" onclick="toggleCart()">×</button>
+    <footer>
+        <h3>🌿 Green Harvest Foods</h3>
+        <p>Authentic Indian pickles, podis, sweets and traditional foods made with love</p>
+        <div class="footer-contact">
+            <a href="https://wa.me/919876543210" target="_blank">📱 WhatsApp</a>
+            <a href="tel:+919876543210">📞 Call Us</a>
+            <a href="mailto:contact@greenharvest.com">✉️ Email</a>
         </div>
-        <div class="cart-items" id="cartItems">
-            <!-- Cart items will be inserted here -->
-        </div>
-        <div class="cart-footer">
-            <div class="cart-total">
-                <span>Total:</span>
-                <span id="cartTotal">₹0</span>
-            </div>
-            <button class="checkout-btn" onclick="checkout()">
-                <i class="fab fa-whatsapp"></i> Checkout on WhatsApp
-            </button>
-            <button class="clear-cart" onclick="clearCart()">Clear Cart</button>
-        </div>
-    </div>
-
-    <!-- Overlay -->
-    <div class="overlay" id="overlay" onclick="closeAllModals()"></div>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-logo">🌿 Green Harvest Foods</div>
-            <p class="footer-tagline">Authentic Indian pickles, podis, sweets and traditional foods made with love and traditional recipes passed down through generations.</p>
-            <p class="copyright">© 2023 Green Harvest Foods. All rights reserved.</p>
-        </div>
+        <p style="margin-top: 1rem; opacity: 0.8;">© 2026 Green Harvest Foods. All rights reserved.</p>
     </footer>
 
+    <div class="cart-modal" id="cartModal">
+        <div class="cart-content">
+            <div class="cart-header">
+                <h2>Your Cart</h2>
+                <button class="close-cart" onclick="toggleCart()">✕</button>
+            </div>
+            <div id="cartItems"></div>
+            <div class="cart-total">
+                <h3>Total: ₹<span id="cartTotal">0</span></h3>
+                <button class="checkout-btn" onclick="checkoutWhatsApp()">
+                    📱 Order via WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Product Data
         const products = [
-            { 
-                id: 1, 
-                name: 'Avaakaya Mango Pickle', 
-                category: 'pickles', 
-                type: 'veg', 
-                images: ['🥭', '🌶️', '🫙'], 
-                desc: 'Authentic Andhra style spicy mango pickle made with raw mangoes, red chillies, and traditional spices. Perfect with rice, curd, or any meal.', 
-                ingredients: ['Raw Mangoes', 'Red Chilli Powder', 'Mustard Seeds', 'Fenugreek Seeds', 'Turmeric', 'Salt', 'Oil'],
-                sizes: [
-                    {size: '250g', price: 199},
-                    {size: '500g', price: 349},
-                    {size: '1kg', price: 599}
-                ],
-                featured: true
-            },
-            { 
-                id: 2, 
-                name: 'Lemon Pickle', 
-                category: 'pickles', 
-                type: 'veg', 
-                images: ['🍋', '🌿', '🫙'], 
-                desc: 'Tangy and spicy lemon pickle made with fresh lemons, Indian spices, and a hint of jaggery for balanced flavor.', 
-                ingredients: ['Lemons', 'Mustard Seeds', 'Fenugreek Seeds', 'Turmeric', 'Red Chilli', 'Asafoetida', 'Salt', 'Oil'],
-                sizes: [
-                    {size: '250g', price: 179},
-                    {size: '500g', price: 299}
-                ],
-                featured: true
-            },
-            { 
-                id: 3, 
-                name: 'Gongura Pickle', 
-                category: 'pickles', 
-                type: 'veg', 
-                images: ['🌿', '🌶️', '🫙'], 
-                desc: 'Traditional sorrel leaves pickle with a unique tangy taste. A specialty from Telangana region.', 
-                ingredients: ['Gongura Leaves', 'Red Chillies', 'Garlic', 'Mustard Seeds', 'Cumin', 'Salt', 'Oil'],
-                sizes: [
-                    {size: '250g', price: 199},
-                    {size: '500g', price: 359}
-                ],
-                featured: false
-            },
-            { 
-                id: 4, 
-                name: 'Chicken Pickle', 
-                category: 'pickles', 
-                type: 'nonveg', 
-                images: ['🍗', '🌶️', '🫙'], 
-                desc: 'Spicy chicken pickle made with tender chicken pieces marinated in traditional spices and cooked to perfection.', 
-                ingredients: ['Chicken', 'Red Chilli Powder', 'Ginger Garlic Paste', 'Turmeric', 'Vinegar', 'Spices', 'Oil'],
-                sizes: [
-                    {size: '250g', price: 299},
-                    {size: '500g', price: 549}
-                ],
-                featured: true
-            },
-            { 
-                id: 5, 
-                name: 'Prawn Pickle', 
-                category: 'pickles', 
-                type: 'nonveg', 
-                images: ['🦐', '🌶️', '🫙'], 
-                desc: 'Coastal style prawn pickle with fresh prawns cooked in aromatic spices and tangy tamarind.', 
-                ingredients: ['Prawns', 'Red Chillies', 'Tamarind', 'Garlic', 'Fenugreek', 'Mustard Seeds', 'Oil', 'Salt'],
-                sizes: [
-                    {size: '250g', price: 349},
-                    {size: '500g', price: 649}
-                ],
-                featured: false
-            },
-            { 
-                id: 6, 
-                name: 'Garlic Pickle', 
-                category: 'pickles', 
-                type: 'veg', 
-                images: ['🧄', '🌶️', '🫙'], 
-                desc: 'Pungent and spicy garlic pickle perfect for garlic lovers. Enhances the flavor of any meal.', 
-                ingredients: ['Garlic Cloves', 'Red Chilli Powder', 'Lemon Juice', 'Mustard Seeds', 'Fenugreek', 'Salt', 'Oil'],
-                sizes: [
-                    {size: '250g', price: 189},
-                    {size: '500g', price: 329}
-                ],
-                featured: false
-            },
-            { 
-                id: 7, 
-                name: 'Idli Podi', 
-                category: 'podis', 
-                type: 'veg', 
-                images: ['🌰', '🌶️', '🥄'], 
-                desc: 'Classic South Indian gunpowder made with lentils, spices, and sesame seeds. Perfect with idli, dosa, or rice.', 
-                ingredients: ['Chana Dal', 'Urad Dal', 'Red Chillies', 'Sesame Seeds', 'Asafoetida', 'Salt'],
-                sizes: [
-                    {size: '100g', price: 99},
-                    {size: '250g', price: 199},
-                    {size: '500g', price: 349}
-                ],
-                featured: true
-            },
-            { 
-                id: 8, 
-                name: 'Curry Leaf Podi', 
-                category: 'podis', 
-                type: 'veg', 
-                images: ['🍃', '🌰', '🥄'], 
-                desc: 'Aromatic curry leaf powder rich in antioxidants. Great for digestion and adds flavor to any dish.', 
-                ingredients: ['Curry Leaves', 'Chana Dal', 'Urad Dal', 'Red Chillies', 'Tamarind', 'Salt', 'Oil'],
-                sizes: [
-                    {size: '100g', price: 89},
-                    {size: '250g', price: 179}
-                ],
-                featured: false
-            },
-            { 
-                id: 9, 
-                name: 'Garlic Podi', 
-                category: 'podis', 
-                type: 'veg', 
-                images: ['🧄', '🌰', '🥄'], 
-                desc: 'Garlic flavored podi with the goodness of garlic and traditional spices. Excellent with hot rice and ghee.', 
-                ingredients: ['Garlic', 'Chana Dal', 'Urad Dal', 'Red Chillies', 'Sesame Seeds', 'Salt'],
-                sizes: [
-                    {size: '100g', price: 109},
-                    {size: '250g', price: 219}
-                ],
-                featured: false
-            },
-            { 
-                id: 10, 
-                name: 'Flax Seed Podi', 
-                category: 'podis', 
-                type: 'veg', 
-                images: ['🌾', '🌰', '🥄'], 
-                desc: 'Healthy flax seed podi rich in omega-3. A nutritious addition to your daily meals.', 
-                ingredients: ['Flax Seeds', 'Chana Dal', 'Urad Dal', 'Red Chillies', 'Sesame Seeds', 'Salt'],
-                sizes: [
-                    {size: '100g', price: 129},
-                    {size: '250g', price: 249}
-                ],
-                featured: true
-            },
-            { 
-                id: 11, 
-                name: 'Mysore Pak', 
-                category: 'sweets', 
-                type: 'veg', 
-                images: ['🟨', '🍯', '🎁'], 
-                desc: 'Classic South Indian sweet made with pure ghee, gram flour, and sugar. Rich, melt-in-mouth texture.', 
-                ingredients: ['Gram Flour', 'Pure Ghee', 'Sugar', 'Cardamom', 'Water'],
-                sizes: [
-                    {size: '250g', price: 199},
-                    {size: '500g', price: 379}
-                ],
-                featured: true
-            },
-            { 
-                id: 12, 
-                name: 'Ladoo', 
-                category: 'sweets', 
-                type: 'veg', 
-                images: ['🟡', '🥥', '🎁'], 
-                desc: 'Traditional besan ladoo made with gram flour, ghee, sugar, and nuts. A festive favorite.', 
-                ingredients: ['Gram Flour', 'Pure Ghee', 'Sugar', 'Cashews', 'Raisins', 'Cardamom'],
-                sizes: [
-                    {size: '250g', price: 149},
-                    {size: '500g', price: 279},
-                    {size: '1kg', price: 499}
-                ],
-                featured: false
-            },
-            { 
-                id: 13, 
-                name: 'Kaju Katli', 
-                category: 'sweets', 
-                type: 'veg', 
-                images: ['🔶', '🌰', '🎁'], 
-                desc: 'Premium cashew sweet made with finely ground cashews, sugar, and edible silver leaf.', 
-                ingredients: ['Cashews', 'Sugar', 'Ghee', 'Cardamom', 'Edible Silver Leaf'],
-                sizes: [
-                    {size: '250g', price: 299},
-                    {size: '500g', price: 569}
-                ],
-                featured: true
-            },
-            { 
-                id: 14, 
-                name: 'Jaggery Sweets', 
-                category: 'sweets', 
-                type: 'veg', 
-                images: ['🟤', '🍯', '🎁'], 
-                desc: 'Healthy sweets made with organic jaggery, nuts, and traditional recipes. No refined sugar.', 
-                ingredients: ['Jaggery', 'Gram Flour', 'Ghee', 'Cashews', 'Almonds', 'Cardamom'],
-                sizes: [
-                    {size: '250g', price: 159},
-                    {size: '500g', price: 299}
-                ],
-                featured: false
-            },
+            // VEG PICKLES
+            {name: "Ginger Pickle", type: "veg", emojis: ["🫚", "🌿", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Mango Pickle", type: "veg", emojis: ["🥭", "🌶️", "🍯"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Grated Mango Pickle", type: "veg", emojis: ["🥭", "🔪", "🌿"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Small Mango Pieces Pickle", type: "veg", emojis: ["🥭", "✂️", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Tomato Paste Pickle", type: "veg", emojis: ["🍅", "🌶️", "🥄"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Tomato Pieces Pickle", type: "veg", emojis: ["🍅", "🔪", "🌿"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Amla Pickle", type: "veg", emojis: ["🟢", "🌿", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Amla Paste Pickle", type: "veg", emojis: ["🟢", "🥄", "🌶️"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Drumstick Pickle", type: "veg", emojis: ["🥒", "🌿", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Tomato Drumstick Pickle", type: "veg", emojis: ["🍅", "🥒", "🌶️"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Brinjal Pickle", type: "veg", emojis: ["🍆", "🌿", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Gongura Pickle", type: "veg", emojis: ["🌿", "🌶️", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Gongura Pandumirchi Pickle", type: "veg", emojis: ["🌿", "🌶️", "🔥"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Gongura Paste", type: "paste", emojis: ["🌿", "🥄", "🍯"], prices: {half: 350, full: 700}, isNew: false},
+            {name: "Pandumirchi Pickle", type: "veg", emojis: ["🌶️", "🔥", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Lemon Pickle", type: "veg", emojis: ["🍋", "🌿", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Cauliflower Pickle", type: "veg", emojis: ["🥦", "🌶️", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Dosakaya Pickle", type: "veg", emojis: ["🥒", "🌿", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Dondakaya Pickle", type: "veg", emojis: ["🥒", "🌶️", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Chintakaya Pickle", type: "veg", emojis: ["🌰", "🌿", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Mushroom Pickle Pandumirchi", type: "veg", emojis: ["🍄", "🌶️", "🔥"], prices: {half: 600, full: 1200}, isNew: true},
+            {name: "Mushroom Gongura Pickle", type: "veg", emojis: ["🍄", "🌿", "🥘"], prices: {half: 600, full: 1200}, isNew: true},
+            {name: "Garlic Pickle", type: "veg", emojis: ["🧄", "🌶️", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Chikkudkaya Pickle", type: "veg", emojis: ["🥒", "🌿", "🥘"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Kalasikaya Pickle", type: "paste", emojis: ["🥒", "🥄", "🌶️"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Karibheema Pickle", type: "paste", emojis: ["🌶️", "🥄", "🔥"], prices: {half: 300, full: 600}, isNew: false},
+            {name: "Pudina Pickle", type: "paste", emojis: ["🌿", "🥄", "🌶️"], prices: {half: 300, full: 600}, isNew: false},
+            
+            // NON-VEG PICKLES
+            {name: "Chicken Bones Pickle", type: "non-veg", emojis: ["🍗", "🌶️", "🥘"], prices: {half: 550, full: 1100}, isNew: false},
+            {name: "Chicken Boneless Pickle", type: "non-veg", emojis: ["🍗", "🔥", "🌿"], prices: {half: 700, full: 1400}, isNew: false},
+            {name: "Gongura Chicken Boneless Pickle", type: "non-veg", emojis: ["🍗", "🌿", "🔥"], prices: {half: 700, full: 1400}, isNew: false},
+            {name: "Natukodi Chicken Pickle", type: "non-veg", emojis: ["🐓", "🌶️", "🥘"], prices: {half: 800, full: 1600}, isNew: false},
+            {name: "Mutton Bones Pickle", type: "non-veg", emojis: ["🥩", "🌶️", "🥘"], prices: {half: 800, full: 1600}, isNew: false},
+            {name: "Mutton Boneless Pickle", type: "non-veg", emojis: ["🥩", "🔥", "🌿"], prices: {half: 900, full: 1800}, isNew: false},
+            {name: "Gongura Mutton Boneless Pickle", type: "non-veg", emojis: ["🥩", "🌿", "🔥"], prices: {half: 900, full: 1800}, isNew: false},
+            {name: "Shrimp Pickle", type: "non-veg", emojis: ["🦐", "🌶️", "🥘"], prices: {half: 900, full: 1800}, isNew: false},
+            {name: "Gongura Shrimp Pickle", type: "non-veg", emojis: ["🦐", "🌿", "🔥"], prices: {half: 900, full: 1800}, isNew: false},
+            {name: "Mutton Keema Pickle", type: "non-veg", emojis: ["🥩", "🌶️", "🔥"], prices: {half: 900, full: 1800}, isNew: false},
+            
+            // PASTES
+            {name: "Chakkaram Paste", type: "paste", emojis: ["🍯", "🌿", "🥄"], prices: {half: 350, full: 700}, isNew: false},
+            {name: "Tamarind Paste", type: "paste", emojis: ["🌰", "🥄", "🍯"], prices: {half: 400, full: 800}, isNew: false},
+            {name: "Pulibora Paste", type: "paste", emojis: ["🌶️", "🥄", "🔥"], prices: {half: 400, full: 800}, isNew: false},
+            {name: "Ulavacharu Paste", type: "paste", emojis: ["🫘", "🥄", "🌿"], prices: {half: 450, full: 900}, isNew: true},
+            
+            // PODIS AND SWEETS
+            {name: "Ulavacharu Podi", type: "podi", emojis: ["🫘", "🌾", "🥄"], prices: {half: 350, full: 700}, isNew: true},
+            {name: "Hinapa Sunni Podi", type: "podi", emojis: ["🌾", "🥄", "🌿"], prices: {half: 300, full: 600}, isNew: true},
+            {name: "Traditional Sweets & Hots", type: "sweet", emojis: ["🍬", "🍯", "✨"], prices: {half: 400, full: 800}, isNew: true}
         ];
 
-        // Global variables
-        let cart = JSON.parse(localStorage.getItem('greenHarvestCart')) || [];
-        let currentBanner = 0;
-        let currentProduct = null;
-        let selectedSizeIndex = 0;
-        let currentFilters = {
-            category: 'all',
-            type: 'all',
-            minPrice: '',
-            maxPrice: '',
-            sort: 'featured'
-        };
+        let cart = {};
+        let currentFilter = 'all';
+        let currentImages = {};
+        let currentPromo = 0;
 
-        // Initialize the page
-        document.addEventListener('DOMContentLoaded', function() {
-            initBanner();
-            renderCategories();
-            renderProducts(products);
-            updateCartUI();
-            initProductImageSwiping();
-        });
+        // Auto-rotate promos every 4 seconds
+        setInterval(() => {
+            currentPromo = (currentPromo + 1) % 3;
+            goToPromo(currentPromo);
+        }, 4000);
 
-        // Banner functionality
-        function initBanner() {
-            const bannerDots = document.getElementById('bannerDots');
-            const slides = document.querySelectorAll('.banner-slide');
+        function goToPromo(index) {
+            currentPromo = index;
+            const track = document.getElementById('promoTrack');
+            track.style.transform = `translateX(-${index * 100}%)`;
             
-            // Create dots
-            slides.forEach((_, index) => {
-                const dot = document.createElement('div');
-                dot.className = 'banner-dot' + (index === 0 ? ' active' : '');
-                dot.addEventListener('click', () => setBanner(index));
-                bannerDots.appendChild(dot);
-            });
-            
-            // Auto-rotate banners
-            setInterval(() => {
-                currentBanner = (currentBanner + 1) % slides.length;
-                setBanner(currentBanner);
-            }, 5000);
-        }
-
-        function setBanner(index) {
-            const slides = document.querySelectorAll('.banner-slide');
-            const dots = document.querySelectorAll('.banner-dot');
-            
-            slides.forEach(slide => slide.classList.remove('active'));
-            dots.forEach(dot => dot.classList.remove('active'));
-            
-            slides[index].classList.add('active');
-            dots[index].classList.add('active');
-            currentBanner = index;
-        }
-
-        // Categories
-        function renderCategories() {
-            const categoryBtns = document.querySelectorAll('.category-btn');
-            categoryBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    categoryBtns.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    const category = this.getAttribute('data-category');
-                    currentFilters.category = category;
-                    applyFilters();
-                });
+            document.querySelectorAll('.promo-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === index);
             });
         }
 
-        // Products rendering
-        function renderProducts(productList) {
+        function renderProducts() {
             const grid = document.getElementById('productsGrid');
             grid.innerHTML = '';
             
-            if (productList.length === 0) {
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--gray);">No products found matching your filters.</div>';
-                return;
-            }
-            
-            productList.forEach(product => {
+            const filtered = products.filter(p => 
+                currentFilter === 'all' || p.type === currentFilter
+            );
+
+            filtered.forEach((product) => {
+                const actualIndex = products.indexOf(product);
+                currentImages[actualIndex] = 0;
+                
                 const card = document.createElement('div');
                 card.className = 'product-card';
-                card.setAttribute('data-id', product.id);
                 
-                // Create image slider dots
-                let dotsHtml = '';
-                product.images.forEach((_, i) => {
-                    dotsHtml += `<div class="slider-dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>`;
-                });
+                const imageGallery = `
+                    <div class="image-gallery">
+                        ${product.isNew ? '<div class="new-badge">NEW</div>' : ''}
+                        <div class="gallery-track" id="gallery-${actualIndex}">
+                            ${product.emojis.map(emoji => `
+                                <div class="gallery-image">${emoji}</div>
+                            `).join('')}
+                        </div>
+                        <button class="gallery-nav gallery-prev" onclick="changeImage(${actualIndex}, -1)">‹</button>
+                        <button class="gallery-nav gallery-next" onclick="changeImage(${actualIndex}, 1)">›</button>
+                        <div class="gallery-dots">
+                            ${product.emojis.map((_, i) => `
+                                <div class="dot ${i === 0 ? 'active' : ''}" onclick="goToImage(${actualIndex}, ${i})"></div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
                 
-                // Create image slides
-                let slidesHtml = '';
-                product.images.forEach((img, i) => {
-                    slidesHtml += `<div class="image-slide">${img}</div>`;
-                });
+                const priceDisplay = `
+                    <div class="price-options">
+                        <div class="price-option" onclick="selectSize(${actualIndex}, 'half')">
+                            <div class="size">½ kg</div>
+                            <div class="price">₹${product.prices.half}</div>
+                        </div>
+                        <div class="price-option selected" onclick="selectSize(${actualIndex}, 'full')">
+                            <div class="size">1 kg</div>
+                            <div class="price">₹${product.prices.full}</div>
+                        </div>
+                    </div>
+                `;
                 
                 card.innerHTML = `
-                    <div class="product-image" data-product-id="${product.id}">
-                        <div class="image-slider" id="slider-${product.id}">
-                            ${slidesHtml}
-                        </div>
-                        <div class="slider-nav" id="dots-${product.id}">
-                            ${dotsHtml}
-                        </div>
-                        <div class="product-badge ${product.type}">
-                            ${product.type === 'veg' ? '🟢 VEG' : '🔴 NON-VEG'}
-                        </div>
-                    </div>
+                    ${imageGallery}
                     <div class="product-info">
-                        <h3 class="product-name">${product.name}</h3>
-                        <p class="product-desc">${product.desc}</p>
-                        <div class="product-price">₹${product.sizes[0].price}</div>
+                        <div class="product-name">${product.name}</div>
+                        <span class="product-type ${product.type}">${product.type.replace('-', ' ').toUpperCase()}</span>
+                        ${priceDisplay}
                         <div class="product-actions">
-                            <select class="size-select" id="size-${product.id}">
-                                ${product.sizes.map((size, i) => 
-                                    `<option value="${i}">${size.size}</option>`
-                                ).join('')}
-                            </select>
-                            <button class="add-to-cart" onclick="addToCart(${product.id})">
-                                <i class="fas fa-cart-plus"></i> Add
-                            </button>
+                            <button class="add-to-cart" onclick="addToCart(${actualIndex})">Add to Cart</button>
+                            <a href="https://wa.me/919876543210?text=${encodeURIComponent('I want to order: ' + product.name)}" 
+                               class="whatsapp-quick" target="_blank">📱</a>
                         </div>
                     </div>
                 `;
-                
-                // Add click event to open modal
-                card.addEventListener('click', function(e) {
-                    if (!e.target.classList.contains('add-to-cart') && 
-                        !e.target.classList.contains('size-select') &&
-                        !e.target.closest('.slider-dot')) {
-                        openProductModal(product.id);
-                    }
-                });
-                
                 grid.appendChild(card);
-                
-                // Add event listener to size selector
-                const sizeSelect = document.getElementById(`size-${product.id}`);
-                sizeSelect.addEventListener('change', function() {
-                    const sizeIndex = parseInt(this.value);
-                    const priceElement = card.querySelector('.product-price');
-                    priceElement.textContent = `₹${product.sizes[sizeIndex].price}`;
-                });
             });
         }
 
-        // Image swiping for product cards
-        function initProductImageSwiping() {
-            let touchStartX = 0;
-            let touchEndX = 0;
+        function changeImage(productIndex, direction) {
+            const product = products[productIndex];
+            const totalImages = product.emojis.length;
             
-            document.addEventListener('touchstart', function(e) {
-                if (e.target.closest('.product-image')) {
-                    touchStartX = e.changedTouches[0].screenX;
-                }
-            }, {passive: true});
+            currentImages[productIndex] = (currentImages[productIndex] + direction + totalImages) % totalImages;
             
-            document.addEventListener('touchend', function(e) {
-                if (e.target.closest('.product-image')) {
-                    touchEndX = e.changedTouches[0].screenX;
-                    handleProductImageSwipe(e.target.closest('.product-image'), touchStartX, touchEndX);
-                }
-            }, {passive: true});
+            const gallery = document.getElementById(`gallery-${productIndex}`);
+            gallery.style.transform = `translateX(-${currentImages[productIndex] * 100}%)`;
+            
+            updateDots(productIndex);
         }
 
-        function handleProductImageSwipe(element, startX, endX) {
-            const productId = element.getAttribute('data-product-id');
-            const product = products.find(p => p.id === parseInt(productId));
+        function goToImage(productIndex, imageIndex) {
+            currentImages[productIndex] = imageIndex;
             
-            if (!product) return;
+            const gallery = document.getElementById(`gallery-${productIndex}`);
+            gallery.style.transform = `translateX(-${imageIndex * 100}%)`;
             
-            const slider = document.getElementById(`slider-${productId}`);
-            const dots = document.querySelectorAll(`#dots-${productId} .slider-dot`);
+            updateDots(productIndex);
+        }
+
+        function updateDots(productIndex) {
+            const cards = document.querySelectorAll('.product-card');
+            let cardIndex = 0;
             
-            let currentIndex = 0;
-            dots.forEach((dot, i) => {
-                if (dot.classList.contains('active')) {
-                    currentIndex = i;
+            for (let i = 0; i < products.length; i++) {
+                if (currentFilter === 'all' || products[i].type === currentFilter) {
+                    if (i === productIndex) {
+                        const card = cards[cardIndex];
+                        if (card) {
+                            const dots = card.querySelectorAll('.dot');
+                            dots.forEach((dot, j) => {
+                                dot.classList.toggle('active', j === currentImages[productIndex]);
+                            });
+                        }
+                        break;
+                    }
+                    cardIndex++;
                 }
-            });
-            
-            if (startX > endX + 50) {
-                // Swipe left - next image
-                const nextIndex = (currentIndex + 1) % product.images.length;
-                slider.style.transform = `translateX(-${nextIndex * 100}%)`;
-                dots.forEach(dot => dot.classList.remove('active'));
-                dots[nextIndex].classList.add('active');
-            } else if (startX + 50 < endX) {
-                // Swipe right - previous image
-                const prevIndex = (currentIndex - 1 + product.images.length) % product.images.length;
-                slider.style.transform = `translateX(-${prevIndex * 100}%)`;
-                dots.forEach(dot => dot.classList.remove('active'));
-                dots[prevIndex].classList.add('active');
             }
         }
 
-        // Product Modal
-        function openProductModal(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
+        function selectSize(index, size) {
+            const cards = document.querySelectorAll('.product-card');
+            let cardIndex = 0;
             
-            currentProduct = product;
-            selectedSizeIndex = 0;
-            
-            // Update modal content
-            document.getElementById('modalImage').innerHTML = `
-                <div class="image-slider" style="transform: translateX(0%); width: ${100 * product.images.length}%">
-                    ${product.images.map(img => `<div class="image-slide" style="min-width: ${100/product.images.length}%">${img}</div>`).join('')}
-                </div>
-            `;
-            
-            document.getElementById('modalTitle').textContent = product.name;
-            document.getElementById('modalCategory').textContent = product.category.charAt(0).toUpperCase() + product.category.slice(1);
-            document.getElementById('modalDesc').textContent = product.desc;
-            document.getElementById('modalPrice').textContent = `₹${product.sizes[0].price}`;
-            
-            // Ingredients list
-            const ingredientsList = document.getElementById('modalIngredients');
-            ingredientsList.innerHTML = product.ingredients.map(ing => 
-                `<li><span class="ingredient-name">${ing}</span></li>`
-            ).join('');
-            
-            // Sizes
-            const sizesContainer = document.getElementById('modalSizes');
-            sizesContainer.innerHTML = product.sizes.map((size, index) => `
-                <div class="modal-size ${index === 0 ? 'active' : ''}" data-index="${index}" onclick="selectModalSize(${index})">
-                    <div class="size-label">${size.size}</div>
-                    <div class="size-price">₹${size.price}</div>
-                </div>
-            `).join('');
-            
-            // Update modal add to cart button
-            document.getElementById('modalAddToCart').setAttribute('onclick', `addToCartFromModal(${productId})`);
-            
-            // Show modal and overlay
-            document.getElementById('productModal').classList.add('active');
-            document.getElementById('overlay').classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function selectModalSize(index) {
-            selectedSizeIndex = index;
-            
-            // Update active size
-            document.querySelectorAll('.modal-size').forEach((sizeEl, i) => {
-                sizeEl.classList.toggle('active', i === index);
-            });
-            
-            // Update price
-            document.getElementById('modalPrice').textContent = `₹${currentProduct.sizes[index].price}`;
-        }
-
-        function closeModal() {
-            document.getElementById('productModal').classList.remove('active');
-            document.getElementById('overlay').classList.remove('active');
-            document.body.style.overflow = 'auto';
-        }
-
-        // Cart functionality
-        function addToCart(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-            
-            const sizeSelect = document.getElementById(`size-${productId}`);
-            const sizeIndex = parseInt(sizeSelect.value);
-            const selectedSize = product.sizes[sizeIndex];
-            
-            addToCartItem(product, selectedSize, sizeIndex);
-        }
-
-        function addToCartFromModal(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-            
-            const selectedSize = product.sizes[selectedSizeIndex];
-            addToCartItem(product, selectedSize, selectedSizeIndex);
-            closeModal();
-        }
-
-        function addToCartItem(product, size, sizeIndex) {
-            const cartItemId = `${product.id}-${sizeIndex}`;
-            const existingItem = cart.find(item => item.cartId === cartItemId);
-            
-            if (existingItem) {
-                existingItem.quantity += 1;
-            } else {
-                cart.push({
-                    cartId: cartItemId,
-                    productId: product.id,
-                    name: product.name,
-                    image: product.images[0],
-                    size: size.size,
-                    price: size.price,
-                    quantity: 1
-                });
-            }
-            
-            saveCart();
-            updateCartUI();
-            showCartNotification('Item added to cart!');
-        }
-
-        function showCartNotification(message) {
-            // Create notification element
-            const notification = document.createElement('div');
-            notification.textContent = message;
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: var(--primary);
-                color: white;
-                padding: 12px 20px;
-                border-radius: 8px;
-                z-index: 2000;
-                font-weight: 600;
-                box-shadow: var(--shadow);
-                animation: slideIn 0.3s ease, fadeOut 0.3s ease 2s forwards;
-            `;
-            
-            // Add keyframes for animation
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
+            for (let i = 0; i < products.length; i++) {
+                if (currentFilter === 'all' || products[i].type === currentFilter) {
+                    if (i === index) {
+                        const card = cards[cardIndex];
+                        if (card) {
+                            const options = card.querySelectorAll('.price-option');
+                            options.forEach(opt => opt.classList.remove('selected'));
+                            options[size === 'half' ? 0 : 1].classList.add('selected');
+                        }
+                        break;
+                    }
+                    cardIndex++;
                 }
-                @keyframes fadeOut {
-                    from { opacity: 1; }
-                    to { opacity: 0; }
-                }
-            `;
-            document.head.appendChild(style);
-            
-            document.body.appendChild(notification);
-            
-            // Remove after animation
-            setTimeout(() => {
-                notification.remove();
-                style.remove();
-            }, 2300);
-        }
-
-        function updateQuantity(cartId, delta) {
-            const item = cart.find(i => i.cartId === cartId);
-            if (item) {
-                item.quantity += delta;
-                if (item.quantity <= 0) {
-                    cart = cart.filter(i => i.cartId !== cartId);
-                }
-                saveCart();
-                updateCartUI();
             }
         }
 
-        function removeFromCart(cartId) {
-            cart = cart.filter(i => i.cartId !== cartId);
-            saveCart();
-            updateCartUI();
-        }
-
-        function clearCart() {
-            if (cart.length === 0) return;
+        function addToCart(index) {
+            const product = products[index];
+            const cards = document.querySelectorAll('.product-card');
+            let cardIndex = 0;
             
-            if (confirm('Are you sure you want to clear your cart?')) {
-                cart = [];
-                saveCart();
-                updateCartUI();
+            for (let i = 0; i < products.length; i++) {
+                if (currentFilter === 'all' || products[i].type === currentFilter) {
+                    if (i === index) {
+                        const card = cards[cardIndex];
+                        if (card) {
+                            const selectedOption = card.querySelector('.price-option.selected');
+                            const size = selectedOption.querySelector('.size').textContent;
+                            const price = parseInt(selectedOption.querySelector('.price').textContent.replace('₹', ''));
+                            
+                            const cartKey = `${product.name}_${size}`;
+                            
+                            if (cart[cartKey]) {
+                                cart[cartKey].quantity++;
+                            } else {
+                                cart[cartKey] = {
+                                    name: product.name,
+                                    size: size,
+                                    price: price,
+                                    quantity: 1
+                                };
+                            }
+                            
+                            updateCart();
+                        }
+                        break;
+                    }
+                    cardIndex++;
+                }
             }
         }
 
-        function updateCartUI() {
-            // Update cart count
-            const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+        function updateCart() {
+            const cartCount = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
             document.getElementById('cartCount').textContent = cartCount;
             
-            // Update cart total
-            const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            document.getElementById('cartTotal').textContent = `₹${cartTotal}`;
-            
-            // Update cart items
             const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
             
-            if (cart.length === 0) {
-                cartItems.innerHTML = `
-                    <div class="cart-empty">
-                        <i class="fas fa-shopping-cart"></i>
-                        <p>Your cart is empty</p>
-                        <p>Add some delicious products!</p>
-                    </div>
-                `;
+            if (cartCount === 0) {
+                cartItems.innerHTML = '<div class="empty-cart"><p>Your cart is empty</p></div>';
+                cartTotal.textContent = '0';
                 return;
             }
             
-            let itemsHtml = '';
-            cart.forEach(item => {
-                itemsHtml += `
-                    <div class="cart-item">
-                        <div class="cart-item-image">${item.image}</div>
-                        <div class="cart-item-details">
-                            <div class="cart-item-name">${item.name}</div>
-                            <div class="cart-item-size">${item.size}</div>
-                            <div class="cart-item-controls">
-                                <div class="cart-item-quantity">
-                                    <button class="qty-btn" onclick="updateQuantity('${item.cartId}', -1)">-</button>
-                                    <span>${item.quantity}</span>
-                                    <button class="qty-btn" onclick="updateQuantity('${item.cartId}', 1)">+</button>
-                                </div>
-                                <div class="cart-item-price">₹${item.price * item.quantity}</div>
-                            </div>
-                            <button class="remove-item" onclick="removeFromCart('${item.cartId}')">Remove</button>
-                        </div>
+            let total = 0;
+            cartItems.innerHTML = '';
+            
+            Object.entries(cart).forEach(([key, item]) => {
+                total += item.price * item.quantity;
+                
+                const cartItem = document.createElement('div');
+                cartItem.className = 'cart-item';
+                cartItem.innerHTML = `
+                    <div class="cart-item-info">
+                        <h4>${item.name}</h4>
+                        <p>${item.size} - ₹${item.price}</p>
+                    </div>
+                    <div class="cart-item-controls">
+                        <button class="qty-btn" onclick="updateQuantity('${key}', -1)">-</button>
+                        <span style="font-weight: bold;">${item.quantity}</span>
+                        <button class="qty-btn" onclick="updateQuantity('${key}', 1)">+</button>
                     </div>
                 `;
+                cartItems.appendChild(cartItem);
             });
             
-            cartItems.innerHTML = itemsHtml;
+            cartTotal.textContent = total;
+        }
+
+        function updateQuantity(key, change) {
+            cart[key].quantity += change;
+            if (cart[key].quantity <= 0) {
+                delete cart[key];
+            }
+            updateCart();
+        }
+
+        function filterProducts(type) {
+            currentFilter = type;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderProducts();
         }
 
         function toggleCart() {
-            document.getElementById('cartSidebar').classList.toggle('active');
-            document.getElementById('overlay').classList.toggle('active');
-            document.body.style.overflow = document.getElementById('cartSidebar').classList.contains('active') ? 'hidden' : 'auto';
+            document.getElementById('cartModal').classList.toggle('active');
         }
 
-        function closeAllModals() {
-            closeModal();
-            document.getElementById('cartSidebar').classList.remove('active');
-            document.getElementById('overlay').classList.remove('active');
-            document.body.style.overflow = 'auto';
-        }
-
-        // Filter functionality
-        document.getElementById('filtersToggle').addEventListener('click', function() {
-            this.classList.toggle('active');
-            document.getElementById('filtersContent').classList.toggle('show');
-        });
-
-        function applyFilters() {
-            // Get filter values
-            const type = document.getElementById('typeFilter').value;
-            const minPrice = parseInt(document.getElementById('minPrice').value) || 0;
-            const maxPrice = parseInt(document.getElementById('maxPrice').value) || 999999;
-            const sort = document.getElementById('sortFilter').value;
+        function checkoutWhatsApp() {
+            let message = "Hello! I'd like to order:\n\n";
+            let total = 0;
             
-            // Update current filters
-            currentFilters.type = type;
-            currentFilters.minPrice = minPrice;
-            currentFilters.maxPrice = maxPrice;
-            currentFilters.sort = sort;
-            
-            // Apply filters
-            let filtered = products.filter(p => {
-                // Category filter
-                const categoryMatch = currentFilters.category === 'all' || p.category === currentFilters.category;
-                
-                // Type filter
-                const typeMatch = currentFilters.type === 'all' || p.type === currentFilters.type;
-                
-                // Price filter (use first size price for filtering)
-                const price = p.sizes[0].price;
-                const priceMatch = price >= minPrice && price <= maxPrice;
-                
-                return categoryMatch && typeMatch && priceMatch;
+            Object.values(cart).forEach(item => {
+                message += `${item.name} (${item.size}) x ${item.quantity} = ₹${item.price * item.quantity}\n`;
+                total += item.price * item.quantity;
             });
             
-            // Apply sorting
-            if (sort === 'price-low') {
-                filtered.sort((a, b) => a.sizes[0].price - b.sizes[0].price);
-            } else if (sort === 'price-high') {
-                filtered.sort((a, b) => b.sizes[0].price - a.sizes[0].price);
-            } else if (sort === 'name') {
-                filtered.sort((a, b) => a.name.localeCompare(b.name));
-            } else if (sort === 'featured') {
-                filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
-            }
+            message += `\nTotal: ₹${total}`;
             
-            renderProducts(filtered);
-            
-            // Collapse filters on mobile after applying
-            if (window.innerWidth < 768) {
-                document.getElementById('filtersToggle').classList.remove('active');
-                document.getElementById('filtersContent').classList.remove('show');
-            }
+            const whatsappNumber = "919876543210"; // Replace with your WhatsApp number
+            const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
         }
 
-        function resetFilters() {
-            // Reset category buttons
-            document.querySelectorAll('.category-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-category') === 'all');
-            });
-            
-            // Reset filter inputs
-            document.getElementById('typeFilter').value = 'all';
-            document.getElementById('minPrice').value = '';
-            document.getElementById('maxPrice').value = '';
-            document.getElementById('sortFilter').value = 'featured';
-            
-            // Reset current filters
-            currentFilters = {
-                category: 'all',
-                type: 'all',
-                minPrice: '',
-                maxPrice: '',
-                sort: 'featured'
-            };
-            
-            // Re-render all products
-            renderProducts(products);
-        }
-
-        // Checkout via WhatsApp
-        function checkout() {
-            if (cart.length === 0) {
-                alert('Your cart is empty! Add some items before checkout.');
-                return;
-            }
-            
-            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            
-            let message = `*🛒 Order from Green Harvest Foods*%0A%0A`;
-            message += `Hello! I'd like to place an order:%0A%0A`;
-            
-            cart.forEach((item, index) => {
-                message += `*${index + 1}. ${item.name}*%0A`;
-                message += `Size: ${item.size}%0A`;
-                message += `Quantity: ${item.quantity} x ₹${item.price} = ₹${item.price * item.quantity}%0A%0A`;
-            });
-            
-            message += `--------------------------------%0A`;
-            message += `*Total: ₹${total}*%0A%0A`;
-            message += `Please confirm my order and provide delivery details.`;
-            
-            // WhatsApp number (replace with actual business number)
-            const phoneNumber = '919876543210';
-            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-            
-            window.open(whatsappUrl, '_blank');
-            
-            // Optional: Clear cart after checkout
-            // cart = [];
-            // saveCart();
-            // updateCartUI();
-            // toggleCart();
-        }
-
-        // Utility functions
-        function saveCart() {
-            localStorage.setItem('greenHarvestCart', JSON.stringify(cart));
-        }
-
-        function toggleMobileMenu() {
-            // For future mobile menu implementation
-            alert('Mobile menu would open here. For now, use the cart button and filters.');
-        }
+        // Initialize products on page load
+        renderProducts();
     </script>
 </body>
 </html>
