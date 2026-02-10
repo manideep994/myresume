@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, X, Download, Eye, Search, FileText, File, Trash2, Edit3, Check, Plus, ChevronDown } from 'lucide-react';
+import { Upload, X, Download, Eye, Search, FileText, File, Trash2, Edit3, Check, Plus, Filter, Grid, List, Menu, ChevronDown } from 'lucide-react';
 
 // IndexedDB setup
 const DB_NAME = 'ResumeVault';
@@ -77,16 +77,17 @@ const updateDocument = async (id, updates) => {
 
 // File type icon mapping
 const getFileIcon = (fileType) => {
-  if (fileType === 'application/pdf') return { color: '#FF3B30', label: 'PDF' };
-  if (fileType.includes('word') || fileType.includes('document')) return { color: '#007AFF', label: 'DOC' };
-  if (fileType === 'text/plain') return { color: '#34C759', label: 'TXT' };
-  return { color: '#8E8E93', label: 'FILE' };
+  if (fileType === 'application/pdf') return { color: '#FF3B30', label: 'PDF', bg: '#FFE5E5' };
+  if (fileType.includes('word') || fileType.includes('document')) return { color: '#007AFF', label: 'DOC', bg: '#E5F1FF' };
+  if (fileType === 'text/plain') return { color: '#34C759', label: 'TXT', bg: '#E5F9EC' };
+  return { color: '#8E8E93', label: 'FILE', bg: '#F5F5F7' };
 };
 
-const DocumentCard = ({ doc, isSelected, onClick, onAction, onDownload, onView }) => {
+const DocumentCard = ({ doc, isSelected, onClick, onAction, onDownload, onView, viewMode }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(doc.title);
   const [editTags, setEditTags] = useState(doc.tags.join(', '));
+  const [showActions, setShowActions] = useState(false);
   const fileIcon = getFileIcon(doc.fileType);
 
   const handleSave = async () => {
@@ -107,7 +108,6 @@ const DocumentCard = ({ doc, isSelected, onClick, onAction, onDownload, onView }
   };
 
   const handleDragStart = (e) => {
-    // Create blob from base64
     const base64ToBlob = (base64, mimeType) => {
       const byteCharacters = atob(base64);
       const byteNumbers = new Array(byteCharacters.length);
@@ -121,11 +121,86 @@ const DocumentCard = ({ doc, isSelected, onClick, onAction, onDownload, onView }
     const blob = base64ToBlob(doc.fileData, doc.fileType);
     const url = URL.createObjectURL(blob);
     
-    // Set drag data
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('DownloadURL', `${doc.fileType}:${doc.fileName}:${url}`);
     e.dataTransfer.setData('text/plain', doc.fileName);
   };
+
+  if (viewMode === 'list') {
+    return (
+      <div 
+        className={`doc-list-item ${isSelected ? 'selected' : ''}`}
+        onClick={() => !isEditing && onClick(doc)}
+      >
+        <div className="doc-list-icon" style={{ backgroundColor: fileIcon.bg, color: fileIcon.color }}>
+          <FileText size={20} />
+        </div>
+        
+        {isEditing ? (
+          <div className="doc-list-edit" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Document name"
+              autoFocus
+            />
+            <input
+              type="text"
+              value={editTags}
+              onChange={(e) => setEditTags(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Tags (comma-separated)"
+            />
+            <div className="edit-actions">
+              <button onClick={handleSave} className="btn-icon-sm success">
+                <Check size={16} />
+              </button>
+              <button onClick={() => {
+                setIsEditing(false);
+                setEditTitle(doc.title);
+                setEditTags(doc.tags.join(', '));
+              }} className="btn-icon-sm">
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="doc-list-info">
+              <h3 className="doc-list-title">{doc.title}</h3>
+              <div className="doc-list-meta">
+                {doc.tags.length > 0 && (
+                  <div className="doc-list-tags">
+                    {doc.tags.map((tag, i) => (
+                      <span key={i} className="tag-pill">{tag}</span>
+                    ))}
+                  </div>
+                )}
+                <span className="doc-list-date">{new Date(doc.uploadDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              </div>
+            </div>
+            
+            <div className="doc-list-actions" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => onView(doc)} className="btn-icon" title="View">
+                <Eye size={18} />
+              </button>
+              <button onClick={() => onDownload(doc)} className="btn-icon" title="Download">
+                <Download size={18} />
+              </button>
+              <button onClick={() => setIsEditing(true)} className="btn-icon" title="Edit">
+                <Edit3 size={18} />
+              </button>
+              <button onClick={() => onAction('delete', doc.id)} className="btn-icon danger" title="Delete">
+                <Trash2 size={18} />
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -134,7 +209,7 @@ const DocumentCard = ({ doc, isSelected, onClick, onAction, onDownload, onView }
       draggable={!isEditing}
       onDragStart={handleDragStart}
     >
-      <div className="doc-icon-wrapper" style={{ backgroundColor: fileIcon.color + '15' }}>
+      <div className="doc-card-icon" style={{ backgroundColor: fileIcon.bg }}>
         <div className="doc-icon-label" style={{ color: fileIcon.color }}>
           {fileIcon.label}
         </div>
@@ -158,70 +233,66 @@ const DocumentCard = ({ doc, isSelected, onClick, onAction, onDownload, onView }
             placeholder="Tags (comma-separated)"
           />
           <div className="edit-buttons">
-            <button onClick={handleSave} className="save-btn">
+            <button onClick={handleSave} className="btn-save">
               <Check size={14} />
             </button>
             <button onClick={() => {
               setIsEditing(false);
               setEditTitle(doc.title);
               setEditTags(doc.tags.join(', '));
-            }} className="cancel-edit-btn">
+            }} className="btn-cancel">
               <X size={14} />
             </button>
           </div>
         </div>
       ) : (
         <>
-          <div className="doc-info">
-            <div className="doc-title">{doc.title}</div>
+          <div className="doc-card-info">
+            <h3 className="doc-card-title">{doc.title}</h3>
             {doc.tags.length > 0 && (
-              <div className="doc-tags">
-                {doc.tags.map((tag, i) => (
-                  <span key={i} className="mini-tag">{tag}</span>
+              <div className="doc-card-tags">
+                {doc.tags.slice(0, 2).map((tag, i) => (
+                  <span key={i} className="tag-pill-sm">{tag}</span>
                 ))}
+                {doc.tags.length > 2 && (
+                  <span className="tag-pill-sm more">+{doc.tags.length - 2}</span>
+                )}
               </div>
             )}
-            <div className="doc-date">{new Date(doc.uploadDate).toLocaleDateString()}</div>
+            <div className="doc-card-date">{new Date(doc.uploadDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
           </div>
           
-          <div className="doc-main-actions" onClick={(e) => e.stopPropagation()}>
-            <button 
-              onClick={() => onView(doc)}
-              className="icon-btn view-icon"
-              title="View"
-            >
-              <Eye size={14} />
+          <div className="doc-card-actions" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => onView(doc)} className="btn-icon-sm" title="View">
+              <Eye size={16} />
             </button>
-            <button 
-              onClick={() => onDownload(doc)}
-              className="icon-btn download-icon"
-              title="Download"
-            >
-              <Download size={14} />
+            <button onClick={() => onDownload(doc)} className="btn-icon-sm" title="Download">
+              <Download size={16} />
             </button>
-            <button 
-              onClick={() => setIsEditing(true)}
-              className="icon-btn"
-              title="Edit"
-            >
-              <Edit3 size={14} />
-            </button>
-          </div>
-
-          <div className="doc-delete-action" onClick={(e) => e.stopPropagation()}>
-            <button 
-              onClick={() => onAction('delete', doc.id)}
-              className="delete-btn"
-              title="Delete"
-            >
-              <Trash2 size={14} />
-              Delete
-            </button>
+            <div className="doc-card-menu">
+              <button onClick={() => setShowActions(!showActions)} className="btn-icon-sm">
+                <Menu size={16} />
+              </button>
+              {showActions && (
+                <div className="dropdown-menu">
+                  <button onClick={() => { setIsEditing(true); setShowActions(false); }}>
+                    <Edit3 size={14} /> Edit
+                  </button>
+                  <button onClick={() => { onAction('delete', doc.id); setShowActions(false); }} className="danger">
+                    <Trash2 size={14} /> Delete
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
       
-      {isSelected && <div className="selection-indicator" />}
+      {isSelected && (
+        <div className="selection-check">
+          <Check size={14} />
+        </div>
+      )}
     </div>
   );
 };
@@ -235,6 +306,9 @@ export default function ResumeManager() {
   const [isDragging, setIsDragging] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [viewingDoc, setViewingDoc] = useState(null);
+  const [viewMode, setViewMode] = useState('grid');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -364,28 +438,6 @@ export default function ResumeManager() {
     }
   };
 
-  const handleDownload = () => {
-    const docsToDownload = Array.from(selectedDocs);
-    docsToDownload.forEach((id, index) => {
-      const doc = documents.find(d => d.id === id);
-      if (doc) {
-        setTimeout(() => {
-          const blob = base64ToBlob(doc.fileData, doc.fileType);
-          if (blob) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = doc.fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(url), 100);
-          }
-        }, index * 200); // Stagger downloads by 200ms
-      }
-    });
-  };
-
   const handleSingleDownload = (doc) => {
     const blob = base64ToBlob(doc.fileData, doc.fileType);
     if (blob) {
@@ -400,56 +452,8 @@ export default function ResumeManager() {
     }
   };
 
-  const handleSingleCopy = async (doc) => {
-    try {
-      const blob = base64ToBlob(doc.fileData, doc.fileType);
-      if (blob) {
-        await navigator.clipboard.write([
-          new ClipboardItem({ [blob.type]: blob })
-        ]);
-        return true;
-      }
-    } catch (err) {
-      console.error('Copy failed:', err);
-      return false;
-    }
-  };
-
   const handleView = (doc) => {
     setViewingDoc(doc);
-  };
-
-  const handleCopy = async () => {
-    if (selectedDocs.size === 0) return;
-    
-    try {
-      const items = [];
-      for (const id of selectedDocs) {
-        const doc = documents.find(d => d.id === id);
-        if (doc) {
-          const blob = base64ToBlob(doc.fileData, doc.fileType);
-          if (blob) {
-            items.push(new ClipboardItem({ [blob.type]: blob }));
-          }
-        }
-      }
-      
-      if (items.length > 0) {
-        await navigator.clipboard.write(items);
-        // Visual feedback
-        const btn = document.querySelector('.copy-btn');
-        if (btn) {
-          const originalText = btn.innerHTML;
-          btn.innerHTML = '<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="16" width="16"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied';
-          setTimeout(() => {
-            btn.innerHTML = originalText;
-          }, 2000);
-        }
-      }
-    } catch (err) {
-      console.error('Copy failed:', err);
-      alert('Copy failed. Your browser may not support this feature.');
-    }
   };
 
   const toggleTag = (tag) => {
@@ -483,383 +487,822 @@ export default function ResumeManager() {
         }
 
         body {
-          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-          background: linear-gradient(135deg, #f0f9f4 0%, #e8f5ed 100%);
-          color: #1d1d1f;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+          background: #f8f9fa;
+          color: #1a1a1a;
           -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
         }
 
         .app {
           min-height: 100vh;
-          padding: 20px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          padding: 0;
         }
 
+        /* Header */
         .header {
-          max-width: 1200px;
-          margin: 0 auto 24px;
+          background: white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+          position: sticky;
+          top: 0;
+          z-index: 100;
+        }
+
+        .header-container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 16px 20px;
           display: flex;
-          justify-content: space-between;
           align-items: center;
+          justify-content: space-between;
           gap: 20px;
         }
 
-        .title-section {
-          text-align: center;
-          flex: 1;
-        }
-
-        .logo-container {
+        .logo {
           display: flex;
           align-items: center;
-          justify-content: center;
           gap: 12px;
-          margin-bottom: 4px;
+          text-decoration: none;
+          color: inherit;
         }
 
         .logo-icon {
-          filter: drop-shadow(0 2px 8px rgba(52, 199, 89, 0.3));
-        }
-
-        .title-section h1 {
-          font-size: 32px;
-          font-weight: 600;
-          letter-spacing: -0.5px;
-          color: #1d1d1f;
-          margin: 0;
-        }
-
-        .doc-count {
-          font-size: 14px;
-          color: #86868b;
-        }
-
-        .search-bar {
-          position: relative;
-          width: 240px;
-        }
-
-        .search-bar input {
-          width: 100%;
-          padding: 8px 12px 8px 36px;
-          border: none;
-          background: #fff;
+          width: 40px;
+          height: 40px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           border-radius: 10px;
-          font-size: 14px;
-          color: #1d1d1f;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+        }
+
+        .logo h1 {
+          font-size: 24px;
+          font-weight: 700;
+          color: #1a1a1a;
+          letter-spacing: -0.5px;
+        }
+
+        .header-search {
+          flex: 1;
+          max-width: 500px;
+          position: relative;
+        }
+
+        .header-search input {
+          width: 100%;
+          padding: 12px 16px 12px 44px;
+          border: 2px solid #e9ecef;
+          border-radius: 12px;
+          font-size: 15px;
           transition: all 0.2s;
+          background: #f8f9fa;
         }
 
-        .search-bar input:focus {
+        .header-search input:focus {
           outline: none;
-          box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.2);
+          border-color: #667eea;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
         }
 
-        .search-icon {
+        .header-search .search-icon {
           position: absolute;
-          left: 12px;
+          left: 14px;
           top: 50%;
           transform: translateY(-50%);
-          color: #86868b;
-          pointer-events: none;
+          color: #6c757d;
         }
 
-        .btn {
-          padding: 8px 16px;
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .btn-primary {
+          padding: 10px 20px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
           border: none;
           border-radius: 10px;
-          font-size: 14px;
-          font-weight: 500;
+          font-size: 15px;
+          font-weight: 600;
           cursor: pointer;
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
           transition: all 0.2s;
-          background: linear-gradient(135deg, #34c759 0%, #30d158 100%);
-          color: white;
-          box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
-        .btn:hover {
-          background: linear-gradient(135deg, #30d158 0%, #28a745 100%);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4);
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
-        .btn:active {
+        .btn-primary:active {
           transform: translateY(0);
         }
 
-        .toolbar {
-          max-width: 1200px;
-          margin: 0 auto 20px;
+        .view-toggle {
+          display: flex;
+          background: #f8f9fa;
+          border-radius: 10px;
+          padding: 4px;
+          gap: 4px;
+        }
+
+        .view-btn {
+          padding: 8px 12px;
+          border: none;
+          background: transparent;
+          border-radius: 8px;
+          cursor: pointer;
+          color: #6c757d;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .view-btn.active {
+          background: white;
+          color: #667eea;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        .mobile-menu-btn {
+          display: none;
+          padding: 8px;
+          border: none;
+          background: #f8f9fa;
+          border-radius: 8px;
+          cursor: pointer;
+        }
+
+        /* Main Content */
+        .main-content {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 24px 20px;
+        }
+
+        .content-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          margin-bottom: 24px;
+          gap: 16px;
           flex-wrap: wrap;
-          gap: 12px;
-          padding: 12px 16px;
+        }
+
+        .doc-stats {
+          display: flex;
+          gap: 24px;
+          align-items: center;
+        }
+
+        .stat-item {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .stat-label {
+          font-size: 13px;
+          color: rgba(255,255,255,0.8);
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+          font-size: 28px;
+          font-weight: 700;
+          color: white;
+          margin-top: 4px;
+        }
+
+        .filter-bar {
           background: white;
           border-radius: 12px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          padding: 16px;
+          margin-bottom: 24px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .filter-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+
+        .filter-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: #495057;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .clear-filters {
+          padding: 6px 12px;
+          background: transparent;
+          border: 1px solid #dee2e6;
+          border-radius: 6px;
+          font-size: 13px;
+          color: #6c757d;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .clear-filters:hover {
+          background: #f8f9fa;
+          border-color: #667eea;
+          color: #667eea;
+        }
+
+        .tag-filters {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .tag-filter {
+          padding: 8px 16px;
+          background: #f8f9fa;
+          border: 2px solid transparent;
+          border-radius: 20px;
+          font-size: 14px;
+          color: #495057;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-weight: 500;
+        }
+
+        .tag-filter:hover {
+          background: #e9ecef;
+        }
+
+        .tag-filter.active {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border-color: transparent;
+        }
+
+        /* Selection Bar */
+        .selection-bar {
+          background: white;
+          border-radius: 12px;
+          padding: 16px 20px;
+          margin-bottom: 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          gap: 16px;
+          flex-wrap: wrap;
         }
 
         .selection-info {
           display: flex;
-          gap: 12px;
           align-items: center;
-          font-size: 14px;
-          color: #86868b;
+          gap: 16px;
         }
 
-        .select-actions {
+        .selection-count {
+          font-size: 15px;
+          font-weight: 600;
+          color: #495057;
+        }
+
+        .selection-actions {
           display: flex;
           gap: 8px;
         }
 
-        .select-btn {
-          padding: 4px 12px;
-          border: none;
+        .btn-text {
+          padding: 8px 16px;
           background: transparent;
-          color: #34c759;
-          font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          border-radius: 6px;
-          transition: background 0.2s;
-        }
-
-        .select-btn:hover {
-          background: rgba(52, 199, 89, 0.1);
-        }
-
-        .action-buttons {
-          display: flex;
-          gap: 8px;
-        }
-
-        .action-btn {
-          padding: 6px 14px;
           border: none;
-          background: white;
-          border: 1px solid #d2d2d7;
-          color: #1d1d1f;
-          font-size: 13px;
-          font-weight: 500;
+          color: #667eea;
+          font-size: 14px;
+          font-weight: 600;
           cursor: pointer;
           border-radius: 8px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
           transition: all 0.2s;
         }
 
-        .action-btn:hover:not(:disabled) {
-          background: #f0f9f4;
-          border-color: #34c759;
+        .btn-text:hover {
+          background: rgba(102, 126, 234, 0.1);
         }
 
-        .action-btn:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-        }
-
-        .action-btn.primary {
-          background: linear-gradient(135deg, #34c759 0%, #30d158 100%);
-          color: white;
-          border-color: #34c759;
-          box-shadow: 0 2px 6px rgba(52, 199, 89, 0.25);
-        }
-
-        .action-btn.primary:hover:not(:disabled) {
-          background: linear-gradient(135deg, #30d158 0%, #28a745 100%);
-          box-shadow: 0 3px 10px rgba(52, 199, 89, 0.35);
-        }
-
-        .tag-filter {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-
-        .filter-tag {
-          padding: 4px 10px;
-          background: white;
-          border: 1px solid #d2d2d7;
-          border-radius: 12px;
-          font-size: 12px;
-          color: #1d1d1f;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .filter-tag:hover {
-          background: #f0f9f4;
-          border-color: #34c759;
-        }
-
-        .filter-tag.active {
-          background: linear-gradient(135deg, #34c759 0%, #30d158 100%);
-          color: white;
-          border-color: #34c759;
-          box-shadow: 0 2px 6px rgba(52, 199, 89, 0.25);
-        }
-
+        /* Document Grid */
         .document-grid {
-          max-width: 1200px;
-          margin: 0 auto;
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-          gap: 16px;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 20px;
         }
 
         .doc-card {
           background: white;
-          border-radius: 12px;
-          padding: 16px;
+          border-radius: 16px;
+          padding: 20px;
           cursor: pointer;
-          transition: all 0.2s;
-          position: relative;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           border: 2px solid transparent;
+          position: relative;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
 
         .doc-card:hover {
-          box-shadow: 0 8px 24px rgba(52, 199, 89, 0.15);
           transform: translateY(-4px);
-          border-color: rgba(52, 199, 89, 0.3);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+          border-color: #667eea;
         }
 
         .doc-card.selected {
-          border-color: #34c759;
-          box-shadow: 0 4px 16px rgba(52, 199, 89, 0.25);
+          border-color: #667eea;
+          background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
         }
 
-        .doc-icon-wrapper {
+        .doc-card-icon {
           width: 100%;
-          aspect-ratio: 1;
-          border-radius: 8px;
+          aspect-ratio: 1.4;
+          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
+          margin-bottom: 16px;
         }
 
         .doc-icon-label {
-          font-size: 20px;
-          font-weight: 700;
+          font-size: 24px;
+          font-weight: 800;
           letter-spacing: -0.5px;
         }
 
-        .doc-info {
-          flex: 1;
+        .doc-card-info {
+          margin-bottom: 16px;
         }
 
-        .doc-title {
-          font-size: 13px;
-          font-weight: 500;
-          color: #1d1d1f;
-          margin-bottom: 6px;
-          line-height: 1.3;
-          word-break: break-word;
+        .doc-card-title {
+          font-size: 15px;
+          font-weight: 600;
+          color: #1a1a1a;
+          margin-bottom: 8px;
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
-        .doc-tags {
+        .doc-card-tags {
           display: flex;
+          gap: 6px;
           flex-wrap: wrap;
-          gap: 4px;
-          margin-bottom: 6px;
+          margin-bottom: 8px;
         }
 
-        .mini-tag {
-          font-size: 10px;
-          padding: 2px 6px;
-          background: linear-gradient(135deg, rgba(52, 199, 89, 0.1) 0%, rgba(48, 209, 88, 0.1) 100%);
-          border-radius: 4px;
-          color: #34c759;
-          font-weight: 500;
-        }
-
-        .doc-date {
+        .tag-pill-sm {
           font-size: 11px;
-          color: #86868b;
-        }
-
-        .doc-main-actions {
-          display: flex;
-          gap: 6px;
-          justify-content: center;
-          padding: 8px 0;
-          border-top: 1px solid #f0f0f0;
-        }
-
-        .doc-delete-action {
-          padding-top: 8px;
-          border-top: 1px solid #f0f0f0;
-        }
-
-        .delete-btn {
-          width: 100%;
-          padding: 8px;
-          border: none;
-          background: transparent;
-          color: #ff3b30;
-          font-size: 13px;
-          font-weight: 500;
+          padding: 4px 8px;
+          background: rgba(102, 126, 234, 0.1);
+          color: #667eea;
           border-radius: 6px;
-          cursor: pointer;
+          font-weight: 600;
+        }
+
+        .tag-pill-sm.more {
+          background: #f8f9fa;
+          color: #6c757d;
+        }
+
+        .doc-card-date {
+          font-size: 12px;
+          color: #6c757d;
+        }
+
+        .doc-card-actions {
           display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          transition: all 0.2s;
+          gap: 8px;
+          padding-top: 16px;
+          border-top: 1px solid #f0f0f0;
+          position: relative;
         }
 
-        .delete-btn:hover {
-          background: #ffe9e7;
-        }
-
-        .icon-btn {
-          width: 32px;
-          height: 32px;
-          border: none;
-          background: transparent;
+        .btn-icon-sm {
+          width: 36px;
+          height: 36px;
+          border: 1px solid #e9ecef;
+          background: white;
           border-radius: 8px;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #86868b;
+          color: #495057;
           transition: all 0.2s;
-          border: 1px solid #e8e8ed;
         }
 
-        .icon-btn:hover {
-          background: #f0f9f4;
-          color: #34c759;
-          border-color: #34c759;
+        .btn-icon-sm:hover {
+          background: #f8f9fa;
+          border-color: #667eea;
+          color: #667eea;
         }
 
-        .icon-btn.view-icon:hover {
-          background: #e8f5ed;
-          color: #34c759;
+        .doc-card-menu {
+          position: relative;
+          margin-left: auto;
         }
 
-        .icon-btn.download-icon:hover {
-          background: #e8f5ed;
-          color: #30d158;
+        .dropdown-menu {
+          position: absolute;
+          right: 0;
+          top: calc(100% + 8px);
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+          padding: 8px;
+          min-width: 160px;
+          z-index: 10;
         }
 
-        .preview-modal {
+        .dropdown-menu button {
+          width: 100%;
+          padding: 10px 12px;
+          border: none;
+          background: transparent;
+          text-align: left;
+          border-radius: 8px;
+          font-size: 14px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #495057;
+          transition: all 0.2s;
+        }
+
+        .dropdown-menu button:hover {
+          background: #f8f9fa;
+        }
+
+        .dropdown-menu button.danger {
+          color: #dc3545;
+        }
+
+        .dropdown-menu button.danger:hover {
+          background: #fee;
+        }
+
+        .selection-check {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          width: 24px;
+          height: 24px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        /* List View */
+        .document-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .doc-list-item {
+          background: white;
+          border-radius: 12px;
+          padding: 16px 20px;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: 2px solid transparent;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .doc-list-item:hover {
+          border-color: #667eea;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .doc-list-item.selected {
+          border-color: #667eea;
+          background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+        }
+
+        .doc-list-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .doc-list-info {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .doc-list-title {
+          font-size: 15px;
+          font-weight: 600;
+          color: #1a1a1a;
+          margin-bottom: 6px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .doc-list-meta {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .doc-list-tags {
+          display: flex;
+          gap: 6px;
+        }
+
+        .tag-pill {
+          font-size: 12px;
+          padding: 4px 10px;
+          background: rgba(102, 126, 234, 0.1);
+          color: #667eea;
+          border-radius: 6px;
+          font-weight: 600;
+        }
+
+        .doc-list-date {
+          font-size: 13px;
+          color: #6c757d;
+        }
+
+        .doc-list-actions {
+          display: flex;
+          gap: 8px;
+        }
+
+        .btn-icon {
+          width: 36px;
+          height: 36px;
+          border: 1px solid #e9ecef;
+          background: white;
+          border-radius: 8px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #495057;
+          transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+          background: #f8f9fa;
+          border-color: #667eea;
+          color: #667eea;
+        }
+
+        .btn-icon.danger:hover {
+          border-color: #dc3545;
+          color: #dc3545;
+          background: #fee;
+        }
+
+        /* Edit Mode */
+        .doc-edit {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          width: 100%;
+        }
+
+        .doc-edit input {
+          width: 100%;
+          padding: 10px 12px;
+          border: 2px solid #e9ecef;
+          border-radius: 8px;
+          font-size: 14px;
+          font-family: inherit;
+          transition: all 0.2s;
+        }
+
+        .doc-edit input:focus {
+          outline: none;
+          border-color: #667eea;
+          background: white;
+        }
+
+        .edit-buttons {
+          display: flex;
+          gap: 8px;
+          justify-content: flex-end;
+        }
+
+        .btn-save, .btn-cancel {
+          width: 32px;
+          height: 32px;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+
+        .btn-save {
+          background: #667eea;
+          color: white;
+        }
+
+        .btn-save:hover {
+          background: #5568d3;
+        }
+
+        .btn-cancel {
+          background: #f8f9fa;
+          color: #6c757d;
+        }
+
+        .btn-cancel:hover {
+          background: #e9ecef;
+        }
+
+        .doc-list-edit {
+          flex: 1;
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
+
+        .doc-list-edit input {
+          flex: 1;
+          padding: 8px 12px;
+          border: 2px solid #e9ecef;
+          border-radius: 8px;
+          font-size: 14px;
+        }
+
+        .edit-actions {
+          display: flex;
+          gap: 8px;
+        }
+
+        .btn-icon-sm.success {
+          background: #667eea;
+          color: white;
+          border-color: #667eea;
+        }
+
+        .btn-icon-sm.success:hover {
+          background: #5568d3;
+        }
+
+        /* Upload Modal */
+        .modal-overlay {
           position: fixed;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
           background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+
+        .modal {
+          background: white;
+          border-radius: 20px;
+          padding: 32px;
+          max-width: 520px;
+          width: 100%;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+          text-align: center;
+          margin-bottom: 24px;
+        }
+
+        .modal-header h2 {
+          font-size: 28px;
+          font-weight: 700;
+          color: #1a1a1a;
+          margin-bottom: 8px;
+        }
+
+        .modal-header p {
+          font-size: 15px;
+          color: #6c757d;
+        }
+
+        .drop-zone {
+          border: 2px dashed #dee2e6;
+          border-radius: 16px;
+          padding: 48px 24px;
+          text-align: center;
+          transition: all 0.3s;
+          margin-bottom: 24px;
+          background: #f8f9fa;
+        }
+
+        .drop-zone.dragging {
+          border-color: #667eea;
+          background: rgba(102, 126, 234, 0.05);
+        }
+
+        .drop-icon {
+          width: 80px;
+          height: 80px;
+          margin: 0 auto 20px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+        }
+
+        .drop-text {
+          font-size: 16px;
+          font-weight: 600;
+          color: #1a1a1a;
+          margin-bottom: 8px;
+        }
+
+        .drop-hint {
+          font-size: 14px;
+          color: #6c757d;
+        }
+
+        .modal-actions {
+          display: flex;
+          gap: 12px;
+        }
+
+        .btn-modal {
+          flex: 1;
+          padding: 14px 24px;
+          border: none;
+          border-radius: 12px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .btn-modal.secondary {
+          background: #f8f9fa;
+          color: #495057;
+        }
+
+        .btn-modal.secondary:hover {
+          background: #e9ecef;
+        }
+
+        .btn-modal.primary {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-modal.primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Preview Modal */
+        .preview-modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.8);
           backdrop-filter: blur(10px);
           display: flex;
           align-items: center;
@@ -868,32 +1311,32 @@ export default function ResumeManager() {
           padding: 20px;
         }
 
-        .preview-content {
+        .preview-container {
           background: white;
-          border-radius: 16px;
-          max-width: 900px;
+          border-radius: 20px;
+          max-width: 1000px;
           width: 100%;
           max-height: 90vh;
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
 
         .preview-header {
-          padding: 20px 24px;
+          padding: 24px 28px;
           border-bottom: 1px solid #f0f0f0;
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          gap: 16px;
+          gap: 20px;
         }
 
-        .preview-title h2 {
+        .preview-info h2 {
           font-size: 24px;
-          font-weight: 600;
-          color: #1d1d1f;
-          margin-bottom: 8px;
+          font-weight: 700;
+          color: #1a1a1a;
+          margin-bottom: 12px;
         }
 
         .preview-meta {
@@ -903,323 +1346,114 @@ export default function ResumeManager() {
           flex-wrap: wrap;
         }
 
-        .preview-tags {
-          display: flex;
-          gap: 4px;
-        }
-
-        .preview-date {
-          font-size: 13px;
-          color: #86868b;
-        }
-
-        .close-preview-btn {
-          background: transparent;
+        .btn-close {
+          width: 40px;
+          height: 40px;
           border: none;
+          background: #f8f9fa;
+          border-radius: 10px;
           cursor: pointer;
-          color: #86868b;
-          padding: 4px;
-          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #495057;
           transition: all 0.2s;
         }
 
-        .close-preview-btn:hover {
-          background: #f5f5f7;
-          color: #1d1d1f;
+        .btn-close:hover {
+          background: #e9ecef;
         }
 
         .preview-body {
           flex: 1;
           overflow: auto;
-          background: #f5f5f7;
+          background: #f8f9fa;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 20px;
+          padding: 24px;
         }
 
         .preview-frame {
           width: 100%;
           height: 600px;
           border: none;
-          border-radius: 8px;
+          border-radius: 12px;
           background: white;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
         .preview-placeholder {
           text-align: center;
-          color: #86868b;
+          color: #6c757d;
+        }
+
+        .preview-placeholder svg {
+          margin-bottom: 20px;
+          opacity: 0.5;
         }
 
         .preview-placeholder p {
-          margin-top: 16px;
-          font-size: 15px;
+          font-size: 16px;
+          margin-bottom: 8px;
         }
 
         .preview-hint {
-          font-size: 13px !important;
-          color: #b8b8b8 !important;
-          margin-top: 8px !important;
+          font-size: 14px;
+          color: #adb5bd;
         }
 
         .preview-footer {
-          padding: 16px 24px;
+          padding: 20px 28px;
           border-top: 1px solid #f0f0f0;
           display: flex;
           justify-content: flex-end;
-        }
-
-        .preview-action-btn {
-          padding: 10px 20px;
-          background: linear-gradient(135deg, #34c759 0%, #30d158 100%);
-          color: white;
-          border: none;
-          border-radius: 10px;
-          font-size: 15px;
-          font-weight: 500;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.2s;
-          box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
-        }
-
-        .preview-action-btn:hover {
-          background: linear-gradient(135deg, #30d158 0%, #28a745 100%);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4);
-        }
-
-        .doc-edit {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .doc-edit input {
-          width: 100%;
-          padding: 6px 8px;
-          border: 1px solid #d2d2d7;
-          border-radius: 6px;
-          font-size: 12px;
-          font-family: inherit;
-          background: #f0f9f4;
-        }
-
-        .doc-edit input:focus {
-          outline: none;
-          border-color: #34c759;
-          background: white;
-        }
-
-        .edit-buttons {
-          display: flex;
-          gap: 4px;
-          justify-content: flex-end;
-        }
-
-        .save-btn, .cancel-edit-btn {
-          width: 28px;
-          height: 28px;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-
-        .save-btn {
-          background: #34c759;
-          color: white;
-        }
-
-        .save-btn:hover {
-          background: #28a745;
-        }
-
-        .cancel-edit-btn {
-          background: #f5f5f7;
-          color: #86868b;
-        }
-
-        .cancel-edit-btn:hover {
-          background: #e8e8ed;
-        }
-
-        .selection-indicator {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          width: 24px;
-          height: 24px;
-          background: linear-gradient(135deg, #34c759 0%, #30d158 100%);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 2px 8px rgba(52, 199, 89, 0.4);
-        }
-
-        .selection-indicator::after {
-          content: '✓';
-          color: white;
-          font-size: 14px;
-          font-weight: 700;
-        }
-
-        .upload-modal {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0,0,0,0.4);
-          backdrop-filter: blur(10px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          padding: 20px;
-        }
-
-        .modal-content {
-          background: white;
-          border-radius: 16px;
-          padding: 32px;
-          max-width: 480px;
-          width: 100%;
-          text-align: center;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-
-        .modal-content h2 {
-          font-size: 24px;
-          font-weight: 600;
-          margin-bottom: 12px;
-          color: #1d1d1f;
-        }
-
-        .modal-content p {
-          font-size: 14px;
-          color: #86868b;
-          margin-bottom: 24px;
-        }
-
-        .drop-zone {
-          border: 2px dashed #d2d2d7;
-          border-radius: 12px;
-          padding: 48px 24px;
-          margin-bottom: 24px;
-          transition: all 0.2s;
-        }
-
-        .drop-zone.dragging {
-          border-color: #34c759;
-          background: rgba(52, 199, 89, 0.05);
-        }
-
-        .drop-icon {
-          width: 56px;
-          height: 56px;
-          margin: 0 auto 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #f5f5f7;
-          border-radius: 50%;
-          color: #86868b;
-        }
-
-        .drop-text {
-          font-size: 15px;
-          color: #1d1d1f;
-          margin-bottom: 8px;
-          font-weight: 500;
-        }
-
-        .drop-hint {
-          font-size: 13px;
-          color: #86868b;
-        }
-
-        .modal-actions {
-          display: flex;
           gap: 12px;
         }
 
-        .modal-btn {
-          flex: 1;
-          padding: 12px;
-          border: none;
-          border-radius: 10px;
-          font-size: 15px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .modal-btn.cancel {
-          background: #f5f5f7;
-          color: #1d1d1f;
-        }
-
-        .modal-btn.cancel:hover {
-          background: #e8e8ed;
-        }
-
-        .modal-btn.primary {
-          background: linear-gradient(135deg, #34c759 0%, #30d158 100%);
-          color: white;
-          box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
-        }
-
-        .modal-btn.primary:hover {
-          background: linear-gradient(135deg, #30d158 0%, #28a745 100%);
-          box-shadow: 0 3px 12px rgba(52, 199, 89, 0.4);
-        }
-
+        /* Empty State */
         .empty-state {
-          max-width: 480px;
-          margin: 80px auto;
           text-align: center;
+          padding: 80px 20px;
         }
 
         .empty-icon {
-          width: 80px;
-          height: 80px;
-          margin: 0 auto 24px;
+          width: 120px;
+          height: 120px;
+          margin: 0 auto 32px;
+          background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+          border-radius: 30px;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, rgba(52, 199, 89, 0.1) 0%, rgba(48, 209, 88, 0.1) 100%);
-          border-radius: 50%;
-          color: #34c759;
+          color: #667eea;
         }
 
         .empty-state h2 {
-          font-size: 28px;
-          font-weight: 600;
+          font-size: 32px;
+          font-weight: 700;
+          color: white;
           margin-bottom: 12px;
-          color: #1d1d1f;
         }
 
         .empty-state p {
-          font-size: 15px;
-          color: #86868b;
-          line-height: 1.5;
-          margin-bottom: 24px;
+          font-size: 16px;
+          color: rgba(255,255,255,0.8);
+          margin-bottom: 32px;
+          max-width: 400px;
+          margin-left: auto;
+          margin-right: auto;
+          line-height: 1.6;
         }
 
+        /* Drag Overlay */
         .drag-overlay {
           position: fixed;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
-          background: linear-gradient(135deg, rgba(52, 199, 89, 0.95) 0%, rgba(48, 209, 88, 0.95) 100%);
+          background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
           backdrop-filter: blur(10px);
           display: flex;
           align-items: center;
@@ -1228,30 +1462,30 @@ export default function ResumeManager() {
           pointer-events: none;
         }
 
-        .drag-overlay-content {
+        .drag-content {
           text-align: center;
           color: white;
         }
 
-        .drag-overlay-icon {
+        .drag-content-icon {
           width: 120px;
           height: 120px;
           margin: 0 auto 24px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 30px;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(255,255,255,0.2);
-          border-radius: 50%;
         }
 
-        .drag-overlay h2 {
-          font-size: 32px;
-          font-weight: 600;
-          margin-bottom: 8px;
+        .drag-content h2 {
+          font-size: 36px;
+          font-weight: 700;
+          margin-bottom: 12px;
         }
 
-        .drag-overlay p {
-          font-size: 17px;
+        .drag-content p {
+          font-size: 18px;
           opacity: 0.9;
         }
 
@@ -1259,144 +1493,263 @@ export default function ResumeManager() {
           display: none;
         }
 
-        @media (max-width: 768px) {
+        /* Responsive */
+        @media (max-width: 968px) {
+          .header-search {
+            order: 3;
+            flex-basis: 100%;
+          }
+
+          .view-toggle {
+            display: none;
+          }
+
+          .mobile-menu-btn {
+            display: block;
+          }
+
           .document-grid {
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px;
+          }
+
+          .stat-value {
+            font-size: 24px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .header-container {
+            padding: 12px 16px;
+          }
+
+          .logo h1 {
+            font-size: 20px;
+          }
+
+          .logo-icon {
+            width: 36px;
+            height: 36px;
+          }
+
+          .main-content {
+            padding: 16px;
+          }
+
+          .document-grid {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 12px;
           }
 
-          .header {
+          .doc-card {
+            padding: 16px;
+          }
+
+          .doc-stats {
+            gap: 16px;
+          }
+
+          .stat-label {
+            font-size: 11px;
+          }
+
+          .stat-value {
+            font-size: 20px;
+          }
+
+          .modal {
+            padding: 24px;
+          }
+
+          .selection-bar {
             flex-direction: column;
             align-items: flex-start;
           }
 
-          .toolbar {
-            flex-direction: column;
-            align-items: flex-start;
+          .doc-list-item {
+            padding: 12px 16px;
+          }
+
+          .doc-list-actions {
+            flex-wrap: wrap;
           }
         }
       `}</style>
 
       {isDragging && (
         <div className="drag-overlay">
-          <div className="drag-overlay-content">
-            <div className="drag-overlay-icon">
-              <Upload size={56} strokeWidth={1.5} />
+          <div className="drag-content">
+            <div className="drag-content-icon">
+              <Upload size={64} strokeWidth={2} />
             </div>
-            <h2>Drop to upload</h2>
-            <p>Release files to add them to your vault</p>
+            <h2>Drop files here</h2>
+            <p>Release to upload your documents</p>
           </div>
         </div>
       )}
 
       <div className="header">
-        <div className="search-bar">
-          <Search className="search-icon" size={16} />
-          <input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        
-        <div className="title-section">
-          <div className="logo-container">
-            <svg className="logo-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="url(#gradient1)" />
-              <path d="M16 8L20 12H18V20H14V12H12L16 8Z" fill="white" opacity="0.9" />
-              <path d="M10 22H22V24H10V22Z" fill="white" opacity="0.9" />
-              <circle cx="16" cy="16" r="2" fill="white" opacity="0.6" />
-              <defs>
-                <linearGradient id="gradient1" x1="0" y1="0" x2="32" y2="32">
-                  <stop offset="0%" stopColor="#34c759" />
-                  <stop offset="100%" stopColor="#30d158" />
-                </linearGradient>
-              </defs>
-            </svg>
+        <div className="header-container">
+          <div className="logo">
+            <div className="logo-icon">
+              <FileText size={24} />
+            </div>
             <h1>Sync Doc</h1>
           </div>
-          <div className="doc-count">
-            {filteredDocs.length} {filteredDocs.length === 1 ? 'document' : 'documents'}
+
+          <div className="header-search">
+            <Search className="search-icon" size={18} />
+            <input
+              type="text"
+              placeholder="Search documents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="header-actions">
+            <div className="view-toggle">
+              <button 
+                className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                onClick={() => setViewMode('grid')}
+              >
+                <Grid size={18} />
+              </button>
+              <button 
+                className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                onClick={() => setViewMode('list')}
+              >
+                <List size={18} />
+              </button>
+            </div>
+
+            <button className="btn-primary" onClick={() => setShowUploadModal(true)}>
+              <Plus size={20} />
+              <span>Upload</span>
+            </button>
           </div>
         </div>
-
-        <button className="btn" onClick={() => setShowUploadModal(true)}>
-          <Plus size={18} />
-          Add
-        </button>
       </div>
 
-      {allTags.length > 0 && (
-        <div className="toolbar">
-          <div className="tag-filter">
-            {allTags.map(tag => (
-              <span
-                key={tag}
-                className={`filter-tag ${selectedTags.includes(tag) ? 'active' : ''}`}
-                onClick={() => toggleTag(tag)}
-              >
-                {tag}
+      <div className="main-content">
+        <div className="content-header">
+          <div className="doc-stats">
+            <div className="stat-item">
+              <span className="stat-label">Total Documents</span>
+              <span className="stat-value">{documents.length}</span>
+            </div>
+            {filteredDocs.length !== documents.length && (
+              <div className="stat-item">
+                <span className="stat-label">Filtered</span>
+                <span className="stat-value">{filteredDocs.length}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {allTags.length > 0 && (
+          <div className="filter-bar">
+            <div className="filter-header">
+              <div className="filter-title">
+                <Filter size={16} />
+                Filter by tags
+              </div>
+              {selectedTags.length > 0 && (
+                <button className="clear-filters" onClick={() => setSelectedTags([])}>
+                  Clear filters
+                </button>
+              )}
+            </div>
+            <div className="tag-filters">
+              {allTags.map(tag => (
+                <button
+                  key={tag}
+                  className={`tag-filter ${selectedTags.includes(tag) ? 'active' : ''}`}
+                  onClick={() => toggleTag(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedDocs.size > 0 && (
+          <div className="selection-bar">
+            <div className="selection-info">
+              <span className="selection-count">
+                {selectedDocs.size} selected
               </span>
+              <div className="selection-actions">
+                <button className="btn-text" onClick={selectAll}>
+                  Select all
+                </button>
+                <button className="btn-text" onClick={deselectAll}>
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {filteredDocs.length === 0 && documents.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">
+              <FileText size={56} strokeWidth={1.5} />
+            </div>
+            <h2>No documents yet</h2>
+            <p>Upload your first document to get started with organizing your files</p>
+            <button className="btn-primary" onClick={() => setShowUploadModal(true)}>
+              <Plus size={20} />
+              Upload Document
+            </button>
+          </div>
+        ) : filteredDocs.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">
+              <Search size={56} strokeWidth={1.5} />
+            </div>
+            <h2>No results found</h2>
+            <p>Try adjusting your search or filters to find what you're looking for</p>
+          </div>
+        ) : (
+          <div className={viewMode === 'grid' ? 'document-grid' : 'document-list'}>
+            {filteredDocs.map(doc => (
+              <DocumentCard
+                key={doc.id}
+                doc={doc}
+                isSelected={selectedDocs.has(doc.id)}
+                onClick={toggleSelection}
+                onAction={handleDocAction}
+                onDownload={handleSingleDownload}
+                onView={handleView}
+                viewMode={viewMode}
+              />
             ))}
           </div>
-        </div>
-      )}
-
-      {filteredDocs.length === 0 && documents.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">
-            <FileText size={40} strokeWidth={1.5} />
-          </div>
-          <h2>No documents</h2>
-          <p>Upload your resumes, cover letters, and other documents to get started.</p>
-          <button className="btn" onClick={() => setShowUploadModal(true)}>
-            <Plus size={18} />
-            Add Document
-          </button>
-        </div>
-      ) : filteredDocs.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">
-            <Search size={40} strokeWidth={1.5} />
-          </div>
-          <h2>No results</h2>
-          <p>Try adjusting your search or filters</p>
-        </div>
-      ) : (
-        <div className="document-grid">
-          {filteredDocs.map(doc => (
-            <DocumentCard
-              key={doc.id}
-              doc={doc}
-              isSelected={selectedDocs.has(doc.id)}
-              onClick={toggleSelection}
-              onAction={handleDocAction}
-              onDownload={handleSingleDownload}
-              onView={handleView}
-            />
-          ))}
-        </div>
-      )}
+        )}
+      </div>
 
       {showUploadModal && (
-        <div className="upload-modal" onClick={() => setShowUploadModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Add Documents</h2>
-            <p>Upload PDF, Word, or text files</p>
+        <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Upload Documents</h2>
+              <p>Add PDF, Word, or text files to your library</p>
+            </div>
             <div className={`drop-zone ${isDragging ? 'dragging' : ''}`}>
               <div className="drop-icon">
-                <Upload size={28} strokeWidth={1.5} />
+                <Upload size={40} strokeWidth={2} />
               </div>
               <div className="drop-text">Drag and drop files here</div>
-              <div className="drop-hint">or click browse to choose files</div>
+              <div className="drop-hint">or click browse to select files</div>
             </div>
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setShowUploadModal(false)}>
+              <button className="btn-modal secondary" onClick={() => setShowUploadModal(false)}>
                 Cancel
               </button>
-              <button className="modal-btn primary" onClick={() => fileInputRef.current?.click()}>
-                Browse
+              <button className="btn-modal primary" onClick={() => fileInputRef.current?.click()}>
+                Browse Files
               </button>
             </div>
             <input
@@ -1412,33 +1765,33 @@ export default function ResumeManager() {
 
       {viewingDoc && (
         <div className="preview-modal" onClick={() => setViewingDoc(null)}>
-          <div className="preview-content" onClick={(e) => e.stopPropagation()}>
+          <div className="preview-container" onClick={(e) => e.stopPropagation()}>
             <div className="preview-header">
-              <div className="preview-title">
+              <div className="preview-info">
                 <h2>{viewingDoc.title}</h2>
                 <div className="preview-meta">
                   {viewingDoc.tags.length > 0 && (
                     <div className="preview-tags">
                       {viewingDoc.tags.map((tag, i) => (
-                        <span key={i} className="mini-tag">{tag}</span>
+                        <span key={i} className="tag-pill">{tag}</span>
                       ))}
                     </div>
                   )}
-                  <span className="preview-date">{new Date(viewingDoc.uploadDate).toLocaleDateString()}</span>
+                  <span className="doc-list-date">
+                    {new Date(viewingDoc.uploadDate).toLocaleDateString('en-US', { 
+                      month: 'long', 
+                      day: 'numeric', 
+                      year: 'numeric' 
+                    })}
+                  </span>
                 </div>
               </div>
-              <button onClick={() => setViewingDoc(null)} className="close-preview-btn">
+              <button onClick={() => setViewingDoc(null)} className="btn-close">
                 <X size={24} />
               </button>
             </div>
             <div className="preview-body">
-              {viewingDoc.fileType === 'application/pdf' ? (
-                <iframe 
-                  src={URL.createObjectURL(base64ToBlob(viewingDoc.fileData, viewingDoc.fileType))} 
-                  className="preview-frame"
-                  title={viewingDoc.title}
-                />
-              ) : viewingDoc.fileType === 'text/plain' ? (
+              {viewingDoc.fileType === 'application/pdf' || viewingDoc.fileType === 'text/plain' ? (
                 <iframe 
                   src={URL.createObjectURL(base64ToBlob(viewingDoc.fileData, viewingDoc.fileType))} 
                   className="preview-frame"
@@ -1446,14 +1799,14 @@ export default function ResumeManager() {
                 />
               ) : (
                 <div className="preview-placeholder">
-                  <FileText size={64} strokeWidth={1} />
+                  <FileText size={64} strokeWidth={1.5} />
                   <p>Preview not available for this file type</p>
-                  <p className="preview-hint">Click download to view the document</p>
+                  <p className="preview-hint">Click download to view the file</p>
                 </div>
               )}
             </div>
             <div className="preview-footer">
-              <button onClick={() => handleSingleDownload(viewingDoc)} className="preview-action-btn">
+              <button onClick={() => handleSingleDownload(viewingDoc)} className="btn-primary">
                 <Download size={18} />
                 Download
               </button>
