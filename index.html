@@ -82,6 +82,9 @@
         .search-container {
             background: white;
             border-bottom: 1px solid #e9ecef;
+            position: sticky;
+            top: 72px;
+            z-index: 99;
         }
 
         .search-wrapper {
@@ -1017,6 +1020,42 @@
             display: none;
         }
 
+        /* Scroll to Top Button */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+            z-index: 98;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .scroll-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .scroll-to-top:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 24px rgba(102, 126, 234, 0.5);
+        }
+
+        .scroll-to-top:active {
+            transform: translateY(-2px);
+        }
+
         /* Icons */
         svg {
             flex-shrink: 0;
@@ -1123,6 +1162,7 @@
                 Grid: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
                 List: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
                 Menu: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+                ChevronUp: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="18 15 12 9 6 15"/></svg>,
             };
             return icons[name] || null;
         };
@@ -1217,7 +1257,7 @@
             const fileIcon = getFileIcon(doc.fileType);
 
             const handleSave = async () => {
-                const tags = editTags.split(',').map(t => t.trim()).filter(t => t);
+                const tags = editTags.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
                 await onAction('update', doc.id, { title: editTitle, tags });
                 setIsEditing(false);
             };
@@ -1412,6 +1452,7 @@
             const [showUploadModal, setShowUploadModal] = useState(false);
             const [viewingDoc, setViewingDoc] = useState(null);
             const [viewMode, setViewMode] = useState('grid');
+            const [showScrollTop, setShowScrollTop] = useState(false);
             const fileInputRef = useRef(null);
 
             useEffect(() => {
@@ -1421,6 +1462,15 @@
             useEffect(() => {
                 filterDocuments();
             }, [documents, searchQuery, selectedTags]);
+
+            useEffect(() => {
+                const handleScroll = () => {
+                    setShowScrollTop(window.scrollY > 300);
+                };
+
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
 
             const loadDocuments = async () => {
                 const docs = await getAllDocuments();
@@ -1457,6 +1507,7 @@
                             fileName: file.name,
                             fileType: file.type,
                             fileData: base64,
+                            fileSize: file.size,
                             tags: [],
                             uploadDate: new Date().toISOString()
                         };
@@ -1571,6 +1622,10 @@
 
             const deselectAll = () => {
                 setSelectedDocs(new Set());
+            };
+
+            const scrollToTop = () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             };
 
             const allTags = [...new Set(documents.flatMap(doc => doc.tags))].sort();
@@ -1816,6 +1871,16 @@
                                     )}
                                 </div>
                                 <div className="preview-footer">
+                                    <div style={{ flex: 1, fontSize: '14px', color: '#6c757d' }}>
+                                        {viewingDoc.fileType === 'application/pdf' && (
+                                            <span style={{ marginRight: '16px' }}>
+                                                📄 PDF Document
+                                            </span>
+                                        )}
+                                        <span>
+                                            📦 Size: {(viewingDoc.fileSize / 1024).toFixed(2)} KB
+                                        </span>
+                                    </div>
                                     <button onClick={() => handleSingleDownload(viewingDoc)} className="btn-primary">
                                         <Icon name="Download" size={18} />
                                         Download
@@ -1823,6 +1888,12 @@
                                 </div>
                             </div>
                         </div>
+                    )}
+
+                    {showScrollTop && (
+                        <button className="scroll-to-top visible" onClick={scrollToTop} title="Scroll to top">
+                            <Icon name="ChevronUp" size={24} />
+                        </button>
                     )}
                 </div>
             );
