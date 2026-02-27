@@ -1,1981 +1,950 @@
 <!DOCTYPE html>
 <html lang="en">
-
-    <!-- Privacy-friendly analytics by Plausible -->
-<script async src="https://plausible.io/js/pa-fxN_xqNfv1BOiYqdqh818.js"></script>
-<script>
-  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-  plausible.init()
-</script>
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sync Doc - Document Manager</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            background: #f8f9fa;
-            color: #1a1a1a;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        .app {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 0;
-        }
-
-        /* Header */
-        .header {
-            background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-
-        .logo h1 {
-            font-size: 24px;
-            font-weight: 700;
-            color: #1a1a1a;
-            letter-spacing: -0.5px;
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .search-container {
-            background: white;
-            border-bottom: 1px solid #e9ecef;
-            position: sticky;
-            top: 72px;
-            z-index: 99;
-        }
-
-        .search-wrapper {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 16px 20px;
-        }
-
-        .header-search {
-            position: relative;
-            width: 100%;
-        }
-
-        .header-search input {
-            width: 100%;
-            padding: 14px 16px 14px 48px;
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            font-size: 15px;
-            transition: all 0.2s;
-            background: #f8f9fa;
-        }
-
-        .header-search input:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-        }
-
-        .header-search .search-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6c757d;
-        }
-
-        .btn-primary {
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-
-        .view-toggle {
-            display: flex;
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 4px;
-            gap: 4px;
-        }
-
-        .view-btn {
-            padding: 8px 12px;
-            border: none;
-            background: transparent;
-            border-radius: 8px;
-            cursor: pointer;
-            color: #6c757d;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .view-btn.active {
-            background: white;
-            color: #667eea;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-        }
-
-        /* Main Content */
-        .main-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 24px 20px;
-        }
-
-        .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .doc-stats {
-            display: flex;
-            gap: 24px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .stat-label {
-            font-size: 13px;
-            color: rgba(255,255,255,0.8);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: white;
-            margin-top: 4px;
-        }
-
-        /* Security Badge */
-        .security-badge {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            padding: 12px 18px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .security-icon {
-            width: 36px;
-            height: 36px;
-            background: rgba(76, 175, 80, 0.25);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #4caf50;
-            flex-shrink: 0;
-        }
-
-        .security-text {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .security-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: white;
-            letter-spacing: 0.3px;
-            text-transform: uppercase;
-        }
-
-        .security-description {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.75);
-            line-height: 1.3;
-        }
-
-        .filter-bar {
-            background: white;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-
-        .filter-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .filter-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #495057;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .filter-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .clear-filters, .show-more-btn {
-            padding: 6px 12px;
-            background: transparent;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            font-size: 13px;
-            color: #6c757d;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .clear-filters:hover, .show-more-btn:hover {
-            background: #f8f9fa;
-            border-color: #667eea;
-            color: #667eea;
-        }
-
-        .tag-filters {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .tag-filter {
-            padding: 8px 16px;
-            background: #f8f9fa;
-            border: 2px solid transparent;
-            border-radius: 20px;
-            font-size: 14px;
-            color: #495057;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-        }
-
-        .tag-filter:hover {
-            background: #e9ecef;
-        }
-
-        .tag-filter.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-color: transparent;
-        }
-
-        /* Selection Bar */
-        .selection-bar {
-            background: white;
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .selection-info {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .selection-count {
-            font-size: 15px;
-            font-weight: 600;
-            color: #495057;
-        }
-
-        .selection-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-text {
-            padding: 8px 16px;
-            background: transparent;
-            border: none;
-            color: #667eea;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
-
-        .btn-text:hover {
-            background: rgba(102, 126, 234, 0.1);
-        }
-
-        /* Document Grid */
-        .document-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        .doc-card {
-            background: white;
-            border-radius: 16px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid transparent;
-            position: relative;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .doc-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.12);
-            border-color: #667eea;
-        }
-
-        .doc-card.selected {
-            border-color: #667eea;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-        }
-
-        .doc-card-icon {
-            width: 100%;
-            aspect-ratio: 1.4;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 16px;
-        }
-
-        .doc-icon-label {
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-
-        .doc-card-info {
-            margin-bottom: 16px;
-        }
-
-        .doc-card-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 8px;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .doc-card-tags {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-bottom: 8px;
-        }
-
-        .tag-pill-sm {
-            font-size: 11px;
-            padding: 4px 8px;
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-            border-radius: 6px;
-            font-weight: 600;
-        }
-
-        .tag-pill-sm.more {
-            background: #f8f9fa;
-            color: #6c757d;
-        }
-
-        .doc-card-date {
-            font-size: 12px;
-            color: #6c757d;
-        }
-
-        .doc-card-actions {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            padding-top: 12px;
-            border-top: 1px solid #f0f0f0;
-        }
-
-        .btn-icon-sm {
-            width: 100%;
-            height: 32px;
-            border: 1px solid #e9ecef;
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #6c757d;
-            transition: all 0.2s;
-        }
-
-        .btn-icon-sm:hover {
-            background: #667eea;
-            border-color: #667eea;
-            color: white;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-icon-sm.danger:hover {
-            background: #dc3545;
-            border-color: #dc3545;
-            color: white;
-            box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
-        }
-
-        .doc-card-menu {
-            position: relative;
-            margin-left: auto;
-        }
-
-        .dropdown-menu {
-            position: absolute;
-            right: 0;
-            top: calc(100% + 8px);
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            padding: 8px;
-            min-width: 160px;
-            z-index: 10;
-        }
-
-        .dropdown-menu button {
-            width: 100%;
-            padding: 10px 12px;
-            border: none;
-            background: transparent;
-            text-align: left;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #495057;
-            transition: all 0.2s;
-        }
-
-        .dropdown-menu button:hover {
-            background: #f8f9fa;
-        }
-
-        .dropdown-menu button.danger {
-            color: #dc3545;
-        }
-
-        .dropdown-menu button.danger:hover {
-            background: #fee;
-        }
-
-        .selection-check {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 24px;
-            height: 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
-        }
-
-        /* List View */
-        .document-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .doc-list-item {
-            background: white;
-            border-radius: 12px;
-            padding: 16px 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 2px solid transparent;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-
-        .doc-list-item:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .doc-list-item.selected {
-            border-color: #667eea;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-        }
-
-        .doc-list-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .doc-list-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .doc-list-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .doc-list-meta {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .doc-list-tags {
-            display: flex;
-            gap: 6px;
-        }
-
-        .tag-pill {
-            font-size: 12px;
-            padding: 4px 10px;
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-            border-radius: 6px;
-            font-weight: 600;
-        }
-
-        .doc-list-date {
-            font-size: 13px;
-            color: #6c757d;
-        }
-
-        .doc-list-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-icon {
-            width: 36px;
-            height: 36px;
-            border: 1px solid #e9ecef;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #495057;
-            transition: all 0.2s;
-        }
-
-        .btn-icon:hover {
-            background: #f8f9fa;
-            border-color: #667eea;
-            color: #667eea;
-        }
-
-        .btn-icon.danger:hover {
-            border-color: #dc3545;
-            color: #dc3545;
-            background: #fee;
-        }
-
-        /* Edit Mode */
-        .doc-edit {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 100%;
-        }
-
-        .doc-edit input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
-            transition: all 0.2s;
-        }
-
-        .doc-edit input:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-        }
-
-        .edit-buttons {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-        }
-
-        .btn-save, .btn-cancel {
-            width: 32px;
-            height: 32px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .btn-save {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-save:hover {
-            background: #5568d3;
-        }
-
-        .btn-cancel {
-            background: #f8f9fa;
-            color: #6c757d;
-        }
-
-        .btn-cancel:hover {
-            background: #e9ecef;
-        }
-
-        .doc-list-edit {
-            flex: 1;
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .doc-list-edit input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .edit-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-icon-sm.success {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-
-        .btn-icon-sm.success:hover {
-            background: #5568d3;
-        }
-
-        /* Upload Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-
-        .modal {
-            background: white;
-            border-radius: 20px;
-            padding: 32px;
-            max-width: 520px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal-header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .modal-header h2 {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1a1a1a;
-            margin-bottom: 8px;
-        }
-
-        .modal-header p {
-            font-size: 15px;
-            color: #6c757d;
-        }
-
-        .drop-zone {
-            border: 2px dashed #dee2e6;
-            border-radius: 16px;
-            padding: 48px 24px;
-            text-align: center;
-            transition: all 0.3s;
-            margin-bottom: 24px;
-            background: #f8f9fa;
-        }
-
-        .drop-zone.dragging {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        .drop-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-
-        .drop-text {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 8px;
-        }
-
-        .drop-hint {
-            font-size: 14px;
-            color: #6c757d;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn-modal {
-            flex: 1;
-            padding: 14px 24px;
-            border: none;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-modal.secondary {
-            background: #f8f9fa;
-            color: #495057;
-        }
-
-        .btn-modal.secondary:hover {
-            background: #e9ecef;
-        }
-
-        .btn-modal.primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-modal.primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        /* Preview Modal */
-        .preview-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1001;
-            padding: 20px;
-        }
-
-        .preview-container {
-            background: white;
-            border-radius: 20px;
-            max-width: 1000px;
-            width: 100%;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-
-        .preview-header {
-            padding: 24px 28px;
-            border-bottom: 1px solid #f0f0f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 20px;
-        }
-
-        .preview-info h2 {
-            font-size: 24px;
-            font-weight: 700;
-            color: #1a1a1a;
-            margin-bottom: 12px;
-        }
-
-        .preview-meta {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .btn-close {
-            width: 40px;
-            height: 40px;
-            border: none;
-            background: #f8f9fa;
-            border-radius: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #495057;
-            transition: all 0.2s;
-        }
-
-        .btn-close:hover {
-            background: #e9ecef;
-        }
-
-        .preview-body {
-            flex: 1;
-            overflow: auto;
-            background: #f8f9fa;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
-
-        .preview-frame {
-            width: 100%;
-            height: 600px;
-            border: none;
-            border-radius: 12px;
-            background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .preview-placeholder {
-            text-align: center;
-            color: #6c757d;
-        }
-
-        .preview-placeholder p {
-            font-size: 16px;
-            margin-bottom: 8px;
-        }
-
-        .preview-hint {
-            font-size: 14px;
-            color: #adb5bd;
-        }
-
-        .preview-footer {
-            padding: 20px 28px;
-            border-top: 1px solid #f0f0f0;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-        }
-
-        .empty-icon {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 32px;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #667eea;
-        }
-
-        .empty-state h2 {
-            font-size: 32px;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 12px;
-        }
-
-        .empty-state p {
-            font-size: 16px;
-            color: rgba(255,255,255,0.8);
-            margin-bottom: 32px;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-            line-height: 1.6;
-        }
-
-        /* Drag Overlay */
-        .drag-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 999;
-            pointer-events: none;
-        }
-
-        .drag-content {
-            text-align: center;
-            color: white;
-        }
-
-        .drag-content-icon {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 24px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .drag-content h2 {
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
-
-        .drag-content p {
-            font-size: 18px;
-            opacity: 0.9;
-        }
-
-        input[type="file"] {
-            display: none;
-        }
-
-        /* Scroll to Top Button */
-        .scroll-to-top {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
-            transition: all 0.3s;
-            z-index: 98;
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .scroll-to-top.visible {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .scroll-to-top:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 6px 24px rgba(102, 126, 234, 0.5);
-        }
-
-        .scroll-to-top:active {
-            transform: translateY(-2px);
-        }
-
-        /* Icons */
-        svg {
-            flex-shrink: 0;
-        }
-
-        /* Responsive */
-        @media (max-width: 968px) {
-            .view-toggle {
-                display: none;
-            }
-
-            .document-grid {
-                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-                gap: 16px;
-            }
-
-            .stat-value {
-                font-size: 24px;
-            }
-
-            .search-container {
-                top: 68px;
-            }
-
-            .security-badge {
-                width: 100%;
-            }
-        }
-
-        @media (max-width: 640px) {
-            .header-container {
-                padding: 12px 16px;
-            }
-
-            .logo h1 {
-                font-size: 20px;
-            }
-
-            .logo-icon {
-                width: 36px;
-                height: 36px;
-            }
-
-            .search-wrapper {
-                padding: 12px 16px;
-            }
-
-            .search-container {
-                top: 60px;
-            }
-
-            .main-content {
-                padding: 16px;
-            }
-
-            .document-grid {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                gap: 12px;
-            }
-
-            .doc-card {
-                padding: 16px;
-            }
-
-            .doc-stats {
-                gap: 16px;
-                width: 100%;
-            }
-
-            .stat-label {
-                font-size: 11px;
-            }
-
-            .stat-value {
-                font-size: 20px;
-            }
-
-            .modal {
-                padding: 24px;
-            }
-
-            .selection-bar {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .doc-list-item {
-                padding: 12px 16px;
-            }
-
-            .doc-list-actions {
-                flex-wrap: wrap;
-            }
-
-            .scroll-to-top {
-                bottom: 20px;
-                right: 20px;
-                width: 48px;
-                height: 48px;
-            }
-
-            .security-badge {
-                width: 100%;
-            }
-
-            .security-description {
-                font-size: 10px;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manideep Thotakura — AI/ML Scientist</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0a0a0a;
+  --bg1:#111111;
+  --bg2:#161616;
+  --bg3:#1c1c1c;
+  --border:#2a2a2a;
+  --border2:#333;
+  --text:#e8e8e8;
+  --muted:#666;
+  --muted2:#888;
+  --white:#ffffff;
+  --green:#00e676;
+  --blue:#4dabf7;
+  --accent:#ffffff;
+}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-weight:400;overflow-x:hidden;line-height:1.6;}
+::selection{background:rgba(255,255,255,0.15);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:#333;border-radius:4px;}
+
+/* ── NAV ── */
+#navbar{
+  position:fixed;top:0;left:0;right:0;z-index:900;
+  background:rgba(10,10,10,0.92);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  transition:all 0.3s;
+}
+.nav-inner{
+  max-width:1200px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2rem;height:60px;
+}
+.nav-logo{font-family:'Sora',sans-serif;font-weight:800;font-size:1.1rem;color:var(--white);letter-spacing:-0.02em;}
+.nav-logo span{color:var(--green);}
+.nav-menu{display:flex;gap:0.25rem;list-style:none;}
+.nav-menu a{
+  font-size:0.78rem;font-weight:500;color:var(--muted2);
+  text-decoration:none;padding:0.45rem 0.9rem;border-radius:6px;
+  transition:all 0.2s;letter-spacing:0.01em;
+}
+.nav-menu a:hover{color:var(--white);background:var(--bg3);}
+.nav-menu a.active{color:var(--white);}
+.nav-right{display:flex;align-items:center;gap:0.75rem;}
+.nav-contact{
+  font-size:0.75rem;font-weight:600;
+  color:var(--bg);background:var(--white);
+  text-decoration:none;padding:0.4rem 1rem;border-radius:6px;
+  transition:all 0.2s;
+}
+.nav-contact:hover{background:#e0e0e0;}
+
+/* ── SCROLL TO TOP ── */
+#scrolltop{
+  position:fixed;bottom:2rem;right:2rem;z-index:800;
+  width:42px;height:42px;
+  background:var(--bg2);border:1px solid var(--border2);
+  color:var(--text);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;opacity:0;pointer-events:none;
+  transition:all 0.3s;font-size:1rem;
+}
+#scrolltop.show{opacity:1;pointer-events:all;}
+#scrolltop:hover{background:var(--bg3);border-color:#444;color:var(--white);}
+
+/* ── SECTIONS ── */
+section{padding:6rem 2rem;max-width:1200px;margin:0 auto;}
+.s-label{
+  font-size:0.72rem;font-weight:600;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;
+  display:flex;align-items:center;gap:0.5rem;
+}
+.s-label::before{content:'';width:20px;height:1px;background:var(--border2);}
+.s-title{font-family:'Sora',sans-serif;font-size:clamp(2rem,4vw,3rem);font-weight:800;color:var(--white);letter-spacing:-0.03em;line-height:1.1;margin-bottom:3rem;}
+
+/* ── HERO ── */
+#hero{
+  min-height:100vh;display:flex;align-items:center;
+  max-width:100%;padding:0;position:relative;overflow:hidden;
+}
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);
+  background-size:80px 80px;
+  mask-image:radial-gradient(ellipse 60% 50% at 50% 50%,black,transparent);
+}
+.hero-content{
+  max-width:1200px;margin:0 auto;padding:8rem 2rem 4rem;
+  display:grid;grid-template-columns:1fr 380px;gap:4rem;align-items:center;width:100%;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:0.5rem;
+  font-size:0.75rem;font-weight:500;color:var(--muted2);
+  border:1px solid var(--border2);padding:0.35rem 0.85rem;border-radius:999px;
+  margin-bottom:1.75rem;
+}
+.hero-badge-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,0.4);}50%{box-shadow:0 0 0 6px rgba(0,230,118,0);}}
+h1.hero-name{
+  font-family:'Sora',sans-serif;font-size:clamp(3rem,6vw,5.5rem);
+  font-weight:800;color:var(--white);letter-spacing:-0.04em;line-height:1;margin-bottom:0.75rem;
+  opacity:0;animation:fadeUp 0.8s 0.2s forwards;
+}
+.hero-title{
+  font-family:'Sora',sans-serif;font-size:clamp(1.1rem,2.5vw,1.6rem);
+  font-weight:300;color:var(--muted2);margin-bottom:1.75rem;
+  opacity:0;animation:fadeUp 0.8s 0.35s forwards;
+}
+.hero-title strong{color:var(--white);font-weight:600;}
+.hero-desc{
+  font-size:1rem;line-height:1.75;color:var(--muted2);max-width:540px;
+  margin-bottom:2.5rem;opacity:0;animation:fadeUp 0.8s 0.5s forwards;
+}
+.hero-btns{display:flex;gap:0.75rem;flex-wrap:wrap;opacity:0;animation:fadeUp 0.8s 0.65s forwards;}
+.btn-primary{
+  font-size:0.82rem;font-weight:600;padding:0.7rem 1.5rem;
+  background:var(--white);color:var(--bg);border:none;border-radius:8px;
+  text-decoration:none;cursor:pointer;transition:all 0.2s;
+}
+.btn-primary:hover{background:#e0e0e0;transform:translateY(-1px);}
+.btn-outline{
+  font-size:0.82rem;font-weight:500;padding:0.7rem 1.5rem;
+  background:transparent;color:var(--text);border:1px solid var(--border2);border-radius:8px;
+  text-decoration:none;cursor:pointer;transition:all 0.2s;
+}
+.btn-outline:hover{border-color:#555;color:var(--white);transform:translateY(-1px);}
+
+/* hero stats card */
+.hero-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:2rem;
+  opacity:0;animation:fadeUp 0.8s 0.5s forwards;
+}
+.hc-row{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 0;border-bottom:1px solid var(--border);}
+.hc-row:last-child{border-bottom:none;padding-bottom:0;}
+.hc-row:first-child{padding-top:0;}
+.hc-label{font-size:0.8rem;color:var(--muted);}
+.hc-val{font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:800;color:var(--white);}
+.hc-val span{color:var(--green);}
+.hc-small{font-size:0.78rem;font-weight:500;color:var(--muted2);}
+
+/* ── SEARCH ── */
+#search-section{
+  padding:4rem 2rem;max-width:1200px;margin:0 auto;
+}
+.search-wrap{
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  overflow:hidden;
+}
+.search-header{
+  padding:1.75rem 2rem 1.25rem;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:0.75rem;
+}
+.search-header-icon{
+  width:36px;height:36px;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted2);
+  flex-shrink:0;
+}
+.search-header h3{font-family:'Sora',sans-serif;font-size:1rem;font-weight:700;color:var(--white);}
+.search-header p{font-size:0.78rem;color:var(--muted);margin-top:0.1rem;}
+.search-input-row{
+  display:flex;align-items:center;gap:0;
+  border-bottom:1px solid var(--border);
+}
+.search-input-icon{padding:0 1rem;color:var(--muted);flex-shrink:0;}
+#portfolio-search{
+  flex:1;background:transparent;border:none;outline:none;
+  font-family:'Inter',sans-serif;font-size:0.95rem;color:var(--white);
+  padding:1rem 0;caret-color:var(--green);
+}
+#portfolio-search::placeholder{color:var(--muted);}
+#search-clear{
+  background:none;border:none;cursor:pointer;
+  padding:0 1rem;color:var(--muted);font-size:1.2rem;
+  display:none;transition:color 0.2s;
+}
+#search-clear:hover{color:var(--white);}
+
+/* results */
+#search-results{padding:1.5rem 2rem;display:none;}
+.no-results{text-align:center;padding:2rem;color:var(--muted);font-size:0.9rem;}
+.result-item{
+  padding:1rem 1.25rem;border-radius:10px;border:1px solid var(--border);
+  margin-bottom:0.75rem;cursor:pointer;transition:all 0.15s;
+  background:var(--bg);
+}
+.result-item:hover{border-color:#3a3a3a;background:var(--bg3);}
+.result-item:last-child{margin-bottom:0;}
+.result-section{
+  font-size:0.68rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--green);margin-bottom:0.35rem;
+}
+.result-title{font-size:0.9rem;font-weight:600;color:var(--white);margin-bottom:0.3rem;}
+.result-snippet{font-size:0.82rem;color:var(--muted2);line-height:1.55;}
+.result-snippet mark{background:transparent;color:var(--white);font-weight:600;border-bottom:1px solid var(--white);}
+
+/* hint row */
+.search-hint{
+  padding:1rem 2rem;
+  display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;
+}
+.hint-label{font-size:0.72rem;color:var(--muted);margin-right:0.25rem;}
+.hint-chip{
+  font-size:0.7rem;padding:0.25rem 0.65rem;
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--muted2);border-radius:5px;cursor:pointer;
+  transition:all 0.15s;
+}
+.hint-chip:hover{color:var(--white);border-color:#444;}
+
+/* ── EXPERIENCE ── */
+#experience{border-top:1px solid var(--border);}
+.exp-list{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.exp-item{
+  padding:2rem 2.5rem;border-bottom:1px solid var(--border);
+  transition:background 0.2s;
+}
+.exp-item:last-child{border-bottom:none;}
+.exp-item:hover{background:var(--bg2);}
+.exp-top{display:flex;align-items:flex-start;justify-content:space-between;gap:2rem;margin-bottom:1.25rem;flex-wrap:wrap;}
+.exp-company{font-family:'Sora',sans-serif;font-size:1.35rem;font-weight:800;color:var(--white);letter-spacing:-0.02em;}
+.exp-role{font-size:0.9rem;color:var(--muted2);margin-top:0.2rem;}
+.exp-location{font-size:0.78rem;color:var(--muted);margin-top:0.15rem;}
+.exp-right{text-align:right;flex-shrink:0;}
+.exp-period{
+  font-size:0.75rem;font-weight:500;color:var(--muted2);
+  background:var(--bg3);border:1px solid var(--border2);
+  padding:0.3rem 0.75rem;border-radius:5px;display:inline-block;margin-bottom:0.5rem;
+}
+.exp-badge-current{
+  font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
+  color:#0a0a0a;background:var(--green);
+  padding:0.2rem 0.6rem;border-radius:4px;display:inline-block;
+}
+.exp-desc{font-size:0.88rem;line-height:1.72;color:var(--muted2);margin-bottom:1.25rem;max-width:680px;}
+.exp-wins{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.25rem;}
+.win-tag{
+  font-size:0.72rem;font-weight:500;
+  padding:0.28rem 0.7rem;border-radius:5px;
+  background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);
+  color:#4dff9a;
+}
+.exp-stack{
+  font-size:0.75rem;color:var(--muted);
+  display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center;
+}
+.exp-stack-label{color:var(--muted);margin-right:0.2rem;}
+.stack-tag{
+  font-size:0.7rem;padding:0.18rem 0.55rem;
+  background:var(--bg3);border:1px solid var(--border);
+  color:var(--muted2);border-radius:4px;
+}
+
+/* ── SKILLS ── */
+#skills{border-top:1px solid var(--border);}
+.skills-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.sk-cat{background:var(--bg1);padding:1.75rem;}
+.sk-cat-title{font-family:'Sora',sans-serif;font-size:0.85rem;font-weight:700;color:var(--white);margin-bottom:0.3rem;}
+.sk-cat-sub{font-size:0.72rem;color:var(--muted);margin-bottom:1.1rem;}
+.sk-tags{display:flex;flex-wrap:wrap;gap:0.4rem;}
+.sk-tag{
+  font-size:0.72rem;padding:0.25rem 0.65rem;
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--muted2);border-radius:4px;transition:all 0.15s;
+}
+.sk-tag:hover{background:#222;border-color:#444;color:var(--white);}
+.sk-tag.hot{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.15);color:var(--white);}
+
+/* ── RESEARCH ── */
+#research{border-top:1px solid var(--border);}
+.research-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:2.5rem;}
+.pub-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:1.75rem;transition:border-color 0.2s;
+}
+.pub-card:hover{border-color:#3a3a3a;}
+.pub-index{font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;}
+.pub-title{font-family:'Sora',sans-serif;font-size:1rem;font-weight:700;color:var(--white);margin-bottom:0.75rem;line-height:1.4;}
+.pub-desc{font-size:0.83rem;color:var(--muted2);line-height:1.6;margin-bottom:1.25rem;}
+.pub-link{
+  font-size:0.75rem;font-weight:500;color:var(--blue);text-decoration:none;
+  display:inline-flex;align-items:center;gap:0.35rem;
+  transition:gap 0.15s;
+}
+.pub-link:hover{gap:0.55rem;}
+.cert-row{display:flex;gap:1rem;flex-wrap:wrap;}
+.cert-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+  padding:1rem 1.5rem;display:flex;align-items:center;gap:0.85rem;flex:1;min-width:220px;
+  transition:border-color 0.2s;
+}
+.cert-card:hover{border-color:#3a3a3a;}
+.cert-icon{font-size:1.4rem;flex-shrink:0;}
+.cert-name{font-size:0.85rem;font-weight:600;color:var(--white);}
+.cert-by{font-size:0.72rem;color:var(--muted);margin-top:0.15rem;}
+
+/* ── EDUCATION ── */
+#education{border-top:1px solid var(--border);}
+.edu-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
+.edu-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.75rem;
+  transition:border-color 0.2s;
+}
+.edu-card:hover{border-color:#3a3a3a;}
+.edu-degree{font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
+.edu-school{font-family:'Sora',sans-serif;font-size:1.15rem;font-weight:800;color:var(--white);margin-bottom:0.25rem;letter-spacing:-0.01em;}
+.edu-major{font-size:0.88rem;color:var(--muted2);margin-bottom:0.75rem;}
+.edu-period{font-size:0.75rem;color:var(--muted);}
+
+/* ── CONTACT ── */
+#contact{border-top:1px solid var(--border);text-align:center;}
+.contact-headline{font-family:'Sora',sans-serif;font-size:clamp(2.2rem,5vw,4rem);font-weight:800;color:var(--white);letter-spacing:-0.03em;line-height:1.05;margin-bottom:0.75rem;}
+.contact-sub{font-size:0.95rem;color:var(--muted);margin-bottom:3rem;}
+.contact-grid{display:flex;justify-content:center;flex-wrap:wrap;gap:1rem;margin-bottom:2rem;}
+.contact-btn{
+  display:flex;align-items:center;gap:0.6rem;
+  font-size:0.82rem;font-weight:500;color:var(--text);
+  text-decoration:none;padding:0.8rem 1.5rem;
+  border:1px solid var(--border2);border-radius:8px;
+  transition:all 0.2s;
+}
+.contact-btn:hover{border-color:#444;color:var(--white);transform:translateY(-2px);}
+.contact-btn.primary{background:var(--white);color:var(--bg);border-color:var(--white);}
+.contact-btn.primary:hover{background:#e0e0e0;border-color:#e0e0e0;}
+
+/* ── FOOTER ── */
+footer{border-top:1px solid var(--border);padding:1.5rem 2rem;display:flex;justify-content:space-between;align-items:center;max-width:1200px;margin:0 auto;}
+.foot-l{font-size:0.72rem;color:var(--muted);}
+.foot-r{font-size:0.72rem;color:var(--muted);}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.reveal{opacity:0;transform:translateY(20px);transition:opacity 0.6s,transform 0.6s;}
+.reveal.in{opacity:1;transform:translateY(0);}
+
+/* ── MOBILE ── */
+@media(max-width:860px){
+  .hero-content{grid-template-columns:1fr;}
+  .hero-card{display:none;}
+  .research-grid,.edu-grid{grid-template-columns:1fr;}
+  .nav-menu{display:none;}
+  footer{flex-direction:column;gap:0.5rem;text-align:center;}
+  section{padding:4rem 1.25rem;}
+  #search-section{padding:2rem 1.25rem;}
+  .exp-item{padding:1.5rem;}
+  .exp-top{gap:1rem;}
+  .exp-right{text-align:left;}
+}
+</style>
 </head>
 <body>
-    <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+<!-- NAV -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <div class="nav-logo">MT<span>.</span></div>
+    <ul class="nav-menu">
+      <li><a href="#hero">Home</a></li>
+      <li><a href="#search-section">Search</a></li>
+      <li><a href="#experience">Experience</a></li>
+      <li><a href="#skills">Skills</a></li>
+      <li><a href="#research">Research</a></li>
+      <li><a href="#education">Education</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+    <div class="nav-right">
+      <a href="mailto:manideepdev01@gmail.com" class="nav-contact">Hire Me</a>
+    </div>
+  </div>
+</nav>
 
-        // Lucide Icons as SVG components
-        const Icon = ({ name, size = 24, ...props }) => {
-            const icons = {
-                Upload: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
-                X: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-                Download: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
-                Eye: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
-                Search: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>,
-                FileText: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>,
-                Trash2: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
-                Edit3: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
-                Check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="20 6 9 17 4 12"/></svg>,
-                Plus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-                Filter: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
-                Grid: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
-                List: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
-                Menu: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
-                ChevronUp: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="18 15 12 9 6 15"/></svg>,
-                Shield: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-                ChevronDown: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="6 9 12 15 18 9"/></svg>,
-            };
-            return icons[name] || null;
-        };
+<!-- SCROLL TO TOP -->
+<button id="scrolltop" title="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
-        // IndexedDB setup
-        const DB_NAME = 'ResumeVault';
-        const DB_VERSION = 1;
-        const STORE_NAME = 'documents';
+<!-- HERO -->
+<div id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div>
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        Available for new roles · New York, NY
+      </div>
+      <h1 class="hero-name">Manideep<br>Thotakura</h1>
+      <p class="hero-title"><strong>AI/ML Scientist</strong> — 10+ Years</p>
+      <p class="hero-desc">Building scalable machine learning and deep learning systems that drive real business decisions. Specialized in LLMs, generative AI, computer vision, and cloud-native MLOps across AWS, Azure, and GCP.</p>
+      <div class="hero-btns">
+        <a href="#experience" class="btn-primary">View Experience</a>
+        <a href="#search-section" class="btn-outline">Search Portfolio</a>
+        <a href="mailto:manideepdev01@gmail.com" class="btn-outline">Get In Touch</a>
+      </div>
+    </div>
+    <div class="hero-card">
+      <div class="hc-row">
+        <span class="hc-label">Experience</span>
+        <span class="hc-val">10<span>+ yrs</span></span>
+      </div>
+      <div class="hc-row">
+        <span class="hc-label">Companies</span>
+        <span class="hc-val">5</span>
+      </div>
+      <div class="hc-row">
+        <span class="hc-label">Publications</span>
+        <span class="hc-val">2</span>
+      </div>
+      <div class="hc-row">
+        <span class="hc-label">Certifications</span>
+        <span class="hc-val">2</span>
+      </div>
+      <div class="hc-row">
+        <span class="hc-label">Current</span>
+        <span class="hc-small" style="color:var(--green);">Barclays · Sr. AI/ML Scientist</span>
+      </div>
+    </div>
+  </div>
+</div>
 
-        const initDB = () => {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                
-                request.onerror = () => reject(request.error);
-                request.onsuccess = () => resolve(request.result);
-                
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) {
-                        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-                        store.createIndex('title', 'title', { unique: false });
-                        store.createIndex('tags', 'tags', { unique: false, multiEntry: true });
-                    }
-                };
-            });
-        };
+<!-- SEARCH -->
+<div id="search-section">
+  <div class="search-wrap reveal">
+    <div class="search-header">
+      <div class="search-header-icon">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </div>
+      <div>
+        <h3>Search This Portfolio</h3>
+        <p>Type anything — skills, companies, tools, achievements — and see matching results.</p>
+      </div>
+    </div>
+    <div class="search-input-row">
+      <div class="search-input-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </div>
+      <input type="text" id="portfolio-search" placeholder="e.g. PyTorch, Barclays, NLP, AWS, MLOps…" autocomplete="off">
+      <button id="search-clear">×</button>
+    </div>
+    <div class="search-hint">
+      <span class="hint-label">Try:</span>
+      <span class="hint-chip" data-q="Barclays">Barclays</span>
+      <span class="hint-chip" data-q="deep learning">Deep Learning</span>
+      <span class="hint-chip" data-q="AWS">AWS</span>
+      <span class="hint-chip" data-q="NLP">NLP</span>
+      <span class="hint-chip" data-q="Generative AI">Generative AI</span>
+      <span class="hint-chip" data-q="MLOps">MLOps</span>
+      <span class="hint-chip" data-q="Visa">Visa</span>
+      <span class="hint-chip" data-q="research">Research</span>
+    </div>
+    <div id="search-results"></div>
+  </div>
+</div>
 
-        const saveDocument = async (doc) => {
-            const db = await initDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.add(doc);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        };
+<!-- EXPERIENCE -->
+<section id="experience">
+  <p class="s-label reveal">Work History</p>
+  <h2 class="s-title reveal">Experience</h2>
+  <div class="exp-list">
 
-        const getAllDocuments = async () => {
-            const db = await initDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([STORE_NAME], 'readonly');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.getAll();
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        };
+    <div class="exp-item reveal" data-search="barclays sr senior ai ml scientist jersey city nj aws s3 lambda glue dynamo kinesis step functions emr tensorflow pytorch rnn lstm gru deep learning transfer learning generative ai gpt hugging face transformers xlgboost lightgbm mlflow optuna spark streaming mlops docker kubernetes jenkins flask fastapi reinforcement learning bayesian bayesian ci/cd 40% throughput 25% accuracy 35% discoverability 20% efficiency">
+      <div class="exp-top">
+        <div>
+          <div class="exp-company">Barclays</div>
+          <div class="exp-role">Sr. AI/ML Scientist</div>
+          <div class="exp-location">Jersey City, NJ</div>
+        </div>
+        <div class="exp-right">
+          <div class="exp-period">May 2024 — Present</div><br>
+          <span class="exp-badge-current">Current</span>
+        </div>
+      </div>
+      <p class="exp-desc">Designed and implemented end-to-end ML pipelines on AWS automating model training, deployment, and inference at scale. Built Generative AI applications using GPT models and Hugging Face Transformers for intelligent content generation and conversational AI. Deployed deep learning models (RNNs, LSTMs) via PyTorch with Transfer Learning for business-specific prediction tasks. Integrated advanced NLP using BERT/Transformers for intent classification, NER, and sentiment analysis. Applied computer vision (OpenCV, Faster R-CNN) for real-time object detection in production. Implemented MLOps with MLflow, Docker, Kubernetes, and Jenkins CI/CD pipelines. Led cross-functional AI initiatives contributing to strategic decisions across the organization.</p>
+      <div class="exp-wins">
+        <span class="win-tag">↑ 40% prediction throughput</span>
+        <span class="win-tag">↑ 25% model accuracy</span>
+        <span class="win-tag">↑ 35% metadata discoverability</span>
+        <span class="win-tag">↑ 20% operational efficiency</span>
+      </div>
+      <div class="exp-stack">
+        <span class="exp-stack-label">Stack:</span>
+        <span class="stack-tag">Python</span><span class="stack-tag">PyTorch</span><span class="stack-tag">TensorFlow</span><span class="stack-tag">Hugging Face</span><span class="stack-tag">GPT</span><span class="stack-tag">XGBoost</span><span class="stack-tag">LightGBM</span><span class="stack-tag">MLflow</span><span class="stack-tag">AWS Lambda</span><span class="stack-tag">Glue</span><span class="stack-tag">Kinesis</span><span class="stack-tag">Spark</span><span class="stack-tag">Kafka</span><span class="stack-tag">Docker</span><span class="stack-tag">Kubernetes</span><span class="stack-tag">FastAPI</span>
+      </div>
+    </div>
 
-        const deleteDocument = async (id) => {
-            const db = await initDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.delete(id);
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
-            });
-        };
+    <div class="exp-item reveal" data-search="visa ai ml scientist new york ny azure databricks spark bert transformers hugging face spacy nltk nlp ner sentiment intent classification fastapi lightgbm xgboost optuna airflow azure ml adf synapse cognitive services yolo cnn lstm power bi tableau elk elasticsearch logstash kibana github 40% transformation 30% nlp accuracy 25% forecast">
+      <div class="exp-top">
+        <div>
+          <div class="exp-company">Visa</div>
+          <div class="exp-role">AI/ML Scientist</div>
+          <div class="exp-location">New York, NY</div>
+        </div>
+        <div class="exp-right">
+          <div class="exp-period">Oct 2022 — Apr 2024</div>
+        </div>
+      </div>
+      <p class="exp-desc">Designed and implemented ML models for classification, regression, and clustering using Python, PyTorch, and Scikit-learn. Developed NLP models with Hugging Face BERT and spaCy for intent classification, named entity recognition, and sentiment analysis. Leveraged Azure Databricks and Apache Spark to process large-scale datasets, reducing data transformation time by 40%. Integrated FastAPI for high-performance REST APIs enabling real-time ML inference. Built and maintained ML pipelines using Azure Data Factory integrating SQL Server, Kafka, and Databricks. Implemented YOLO object detection for real-time computer vision inference. Developed and maintained CI/CD pipelines in Azure DevOps for automated ML deployment.</p>
+      <div class="exp-wins">
+        <span class="win-tag">↓ 40% data transformation time</span>
+        <span class="win-tag">↑ 30% NLP accuracy</span>
+        <span class="win-tag">↑ 25% forecast accuracy</span>
+        <span class="win-tag">↑ 20% predictive accuracy</span>
+      </div>
+      <div class="exp-stack">
+        <span class="exp-stack-label">Stack:</span>
+        <span class="stack-tag">Python</span><span class="stack-tag">PyTorch</span><span class="stack-tag">FastAPI</span><span class="stack-tag">LightGBM</span><span class="stack-tag">Optuna</span><span class="stack-tag">Azure ML</span><span class="stack-tag">ADF</span><span class="stack-tag">Spark</span><span class="stack-tag">Hadoop</span><span class="stack-tag">SQL Server</span><span class="stack-tag">YOLO</span><span class="stack-tag">Hugging Face</span><span class="stack-tag">spaCy</span><span class="stack-tag">Power BI</span>
+      </div>
+    </div>
 
-        const updateDocument = async (id, updates) => {
-            const db = await initDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const getRequest = store.get(id);
-                
-                getRequest.onsuccess = () => {
-                    const doc = getRequest.result;
-                    const updated = { ...doc, ...updates };
-                    const putRequest = store.put(updated);
-                    putRequest.onsuccess = () => resolve(updated);
-                    putRequest.onerror = () => reject(putRequest.error);
-                };
-                getRequest.onerror = () => reject(getRequest.error);
-            });
-        };
+    <div class="exp-item reveal" data-search="unum group machine learning engineer chattanooga tennessee google cloud dataflow bigquery scikit-learn keras tensorflow cnn lstm transfer learning nlp spacy nltk opencv yolo bayesian probability spark hadoop flask fastapi mlflow gitlab agile 20% accuracy">
+      <div class="exp-top">
+        <div>
+          <div class="exp-company">Unum Group</div>
+          <div class="exp-role">Machine Learning Engineer</div>
+          <div class="exp-location">Chattanooga, TN</div>
+        </div>
+        <div class="exp-right">
+          <div class="exp-period">Jul 2020 — Sep 2022</div>
+        </div>
+      </div>
+      <p class="exp-desc">Designed and implemented ML models for classification, regression, and clustering using Python, Scikit-learn, Keras, and TensorFlow. Developed and optimized deep learning models including CNNs and LSTMs for sequential data and time-series forecasting. Leveraged Google Cloud Dataflow and BigQuery to build scalable ML data pipelines enabling batch model inference. Applied Transfer Learning using pre-trained models to fine-tune algorithms for domain-specific tasks, reducing training time while improving accuracy. Implemented NLP models using spaCy and NLTK for text preprocessing, tokenization, and sentiment analysis. Built scalable Computer Vision solutions using OpenCV and YOLO. Leveraged Bayesian methods and probability theory to develop probabilistic models. Utilized Apache Spark and Hadoop for distributed data processing.</p>
+      <div class="exp-wins">
+        <span class="win-tag">↑ 20% business planning accuracy</span>
+        <span class="win-tag">Google Cloud Dataflow + BigQuery</span>
+        <span class="win-tag">Computer Vision pipelines</span>
+        <span class="win-tag">Bayesian probabilistic models</span>
+      </div>
+      <div class="exp-stack">
+        <span class="exp-stack-label">Stack:</span>
+        <span class="stack-tag">Python</span><span class="stack-tag">Scikit-learn</span><span class="stack-tag">Keras</span><span class="stack-tag">TensorFlow</span><span class="stack-tag">Google Cloud Dataflow</span><span class="stack-tag">BigQuery</span><span class="stack-tag">Spark</span><span class="stack-tag">Hadoop</span><span class="stack-tag">Flask</span><span class="stack-tag">FastAPI</span><span class="stack-tag">MLflow</span><span class="stack-tag">OpenCV</span><span class="stack-tag">YOLO</span>
+      </div>
+    </div>
 
-        // File type icon mapping
-        const getFileIcon = (fileType) => {
-            if (fileType === 'application/pdf') return { color: '#FF3B30', label: 'PDF', bg: '#FFE5E5' };
-            if (fileType.includes('word') || fileType.includes('document')) return { color: '#007AFF', label: 'DOC', bg: '#E5F1FF' };
-            if (fileType === 'text/plain') return { color: '#34C759', label: 'TXT', bg: '#E5F9EC' };
-            return { color: '#8E8E93', label: 'FILE', bg: '#F5F5F7' };
-        };
+    <div class="exp-item reveal" data-search="sutter health data scientist sacramento california python r scikit-learn google cloud ai hub automl colab mysql aws ec2 s3 rds nlp classification clustering time series forecasting feature engineering bayesian modeling healthcare">
+      <div class="exp-top">
+        <div>
+          <div class="exp-company">Sutter Health</div>
+          <div class="exp-role">Data Scientist</div>
+          <div class="exp-location">Sacramento, CA</div>
+        </div>
+        <div class="exp-right">
+          <div class="exp-period">Jan 2019 — Jun 2020</div>
+        </div>
+      </div>
+      <p class="exp-desc">Performed data wrangling by cleaning and transforming raw data to ensure quality and readiness for ML model building using Python and R. Conducted sentiment analysis and built NLP models to extract insights from unstructured text data. Applied Scikit-learn to implement ML algorithms for classification, regression, and clustering. Developed regression and classification models to predict key healthcare metrics and trends. Applied feature engineering and data transformation to boost model accuracy. Leveraged Google Cloud AI tools (AI Hub, AutoML) to streamline model development and deployment. Collaborated with cross-functional teams in Agile and Kanban environments.</p>
+      <div class="exp-wins">
+        <span class="win-tag">Healthcare ML analytics</span>
+        <span class="win-tag">Google Cloud AutoML</span>
+        <span class="win-tag">NLP sentiment analysis</span>
+        <span class="win-tag">Feature engineering pipelines</span>
+      </div>
+      <div class="exp-stack">
+        <span class="exp-stack-label">Stack:</span>
+        <span class="stack-tag">Python</span><span class="stack-tag">R</span><span class="stack-tag">Scikit-learn</span><span class="stack-tag">Google Cloud AI</span><span class="stack-tag">AutoML</span><span class="stack-tag">Google Colab</span><span class="stack-tag">MySQL</span><span class="stack-tag">AWS EC2</span><span class="stack-tag">S3</span><span class="stack-tag">RDS</span>
+      </div>
+    </div>
 
-        const DocumentCard = ({ doc, isSelected, onClick, onAction, onDownload, onView, viewMode }) => {
-            const [isEditing, setIsEditing] = useState(false);
-            const [editTitle, setEditTitle] = useState(doc.title);
-            const [editTags, setEditTags] = useState(doc.tags.join(', '));
-            const fileIcon = getFileIcon(doc.fileType);
+    <div class="exp-item reveal" data-search="valtech gujarat india business data analyst eda exploratory data analysis regression modeling hypothesis testing aws athena python keras aws glue rds s3 tableau github sql etl machine learning data visualization">
+      <div class="exp-top">
+        <div>
+          <div class="exp-company">Valtech</div>
+          <div class="exp-role">Business / Data Analyst</div>
+          <div class="exp-location">Gujarat, India</div>
+        </div>
+        <div class="exp-right">
+          <div class="exp-period">May 2014 — Apr 2016</div>
+        </div>
+      </div>
+      <p class="exp-desc">Conducted Exploratory Data Analysis (EDA) to understand data distributions and correlations, identifying data quality issues and ensuring clean, actionable datasets. Developed and applied regression modeling techniques to identify trends, predict outcomes, and generate data-driven insights for business decisions. Performed hypothesis testing to validate assumptions and assess variable impact on business processes. Utilized AWS Athena to query and analyze large datasets, providing quick insights and streamlining data analysis workflows. Applied Python for data wrangling, cleaning, and transformation to prepare raw data for ML model development. Built and deployed machine learning models using Keras to generate predictions for advanced analytics.</p>
+      <div class="exp-wins">
+        <span class="win-tag">Regression & EDA pipelines</span>
+        <span class="win-tag">Hypothesis testing</span>
+        <span class="win-tag">AWS Athena analytics</span>
+        <span class="win-tag">Keras ML models</span>
+      </div>
+      <div class="exp-stack">
+        <span class="exp-stack-label">Stack:</span>
+        <span class="stack-tag">Python</span><span class="stack-tag">AWS Athena</span><span class="stack-tag">Keras</span><span class="stack-tag">AWS Glue</span><span class="stack-tag">RDS</span><span class="stack-tag">S3</span><span class="stack-tag">Tableau</span><span class="stack-tag">SQL</span><span class="stack-tag">GitHub</span>
+      </div>
+    </div>
 
-            const handleSave = async () => {
-                const tags = editTags.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
-                await onAction('update', doc.id, { title: editTitle, tags });
-                setIsEditing(false);
-            };
+  </div>
+</section>
 
-            const handleKeyDown = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSave();
-                } else if (e.key === 'Escape') {
-                    setIsEditing(false);
-                    setEditTitle(doc.title);
-                    setEditTags(doc.tags.join(', '));
-                }
-            };
+<!-- SKILLS -->
+<section id="skills">
+  <p class="s-label reveal">Technical Skills</p>
+  <h2 class="s-title reveal">What I Work With</h2>
+  <div class="skills-cats">
+    <div class="sk-cat reveal">
+      <div class="sk-cat-title">ML / AI Core</div>
+      <div class="sk-cat-sub">Frameworks & algorithms</div>
+      <div class="sk-tags">
+        <span class="sk-tag hot">PyTorch</span><span class="sk-tag hot">TensorFlow</span><span class="sk-tag hot">Hugging Face</span><span class="sk-tag hot">GPT Models</span><span class="sk-tag">Scikit-learn</span><span class="sk-tag">Keras</span><span class="sk-tag">XGBoost</span><span class="sk-tag">LightGBM</span><span class="sk-tag">MLflow</span><span class="sk-tag">Optuna</span><span class="sk-tag">Transfer Learning</span><span class="sk-tag">Reinforcement Learning</span>
+      </div>
+    </div>
+    <div class="sk-cat reveal">
+      <div class="sk-cat-title">Deep Learning Architectures</div>
+      <div class="sk-cat-sub">Models & structures</div>
+      <div class="sk-tags">
+        <span class="sk-tag hot">RNNs</span><span class="sk-tag hot">LSTMs</span><span class="sk-tag">GRUs</span><span class="sk-tag">GANs</span><span class="sk-tag hot">CNNs</span><span class="sk-tag hot">BERT</span><span class="sk-tag hot">Transformers</span>
+      </div>
+    </div>
+    <div class="sk-cat reveal">
+      <div class="sk-cat-title">NLP & Computer Vision</div>
+      <div class="sk-cat-sub">Language & image models</div>
+      <div class="sk-tags">
+        <span class="sk-tag hot">BERT</span><span class="sk-tag">spaCy</span><span class="sk-tag">NLTK</span><span class="sk-tag hot">YOLO</span><span class="sk-tag hot">Faster R-CNN</span><span class="sk-tag">OpenCV</span><span class="sk-tag">NER</span><span class="sk-tag">Sentiment Analysis</span>
+      </div>
+    </div>
+    <div class="sk-cat reveal">
+      <div class="sk-cat-title">Cloud Platforms</div>
+      <div class="sk-cat-sub">AWS · Azure · GCP</div>
+      <div class="sk-tags">
+        <span class="sk-tag hot">AWS Lambda</span><span class="sk-tag hot">AWS Glue</span><span class="sk-tag">S3</span><span class="sk-tag">DynamoDB</span><span class="sk-tag">Kinesis</span><span class="sk-tag">EMR</span><span class="sk-tag hot">Azure ML</span><span class="sk-tag">Synapse</span><span class="sk-tag">ADF</span><span class="sk-tag hot">Google Cloud AI</span><span class="sk-tag">BigQuery</span><span class="sk-tag">Dataflow</span>
+      </div>
+    </div>
+    <div class="sk-cat reveal">
+      <div class="sk-cat-title">MLOps & DevOps</div>
+      <div class="sk-cat-sub">Infra, CI/CD & deployment</div>
+      <div class="sk-tags">
+        <span class="sk-tag hot">Docker</span><span class="sk-tag hot">Kubernetes</span><span class="sk-tag">Jenkins</span><span class="sk-tag">Airflow</span><span class="sk-tag">Terraform</span><span class="sk-tag">FastAPI</span><span class="sk-tag">Flask</span><span class="sk-tag">CI/CD</span><span class="sk-tag">GitLab</span><span class="sk-tag">GitHub Actions</span>
+      </div>
+    </div>
+    <div class="sk-cat reveal">
+      <div class="sk-cat-title">Big Data & Databases</div>
+      <div class="sk-cat-sub">Scale & storage</div>
+      <div class="sk-tags">
+        <span class="sk-tag hot">Apache Spark</span><span class="sk-tag">Kafka</span><span class="sk-tag">Hadoop</span><span class="sk-tag">PySpark</span><span class="sk-tag">Snowflake</span><span class="sk-tag">PostgreSQL</span><span class="sk-tag">MongoDB</span><span class="sk-tag">Hive</span><span class="sk-tag">Flink</span>
+      </div>
+    </div>
+  </div>
+</section>
 
-            if (viewMode === 'list') {
-                return (
-                    <div 
-                        className={`doc-list-item ${isSelected ? 'selected' : ''}`}
-                        onClick={() => !isEditing && onClick(doc)}
-                    >
-                        <div className="doc-list-icon" style={{ backgroundColor: fileIcon.bg, color: fileIcon.color }}>
-                            <Icon name="FileText" size={20} />
-                        </div>
-                        
-                        {isEditing ? (
-                            <div className="doc-list-edit" onClick={(e) => e.stopPropagation()}>
-                                <input
-                                    type="text"
-                                    value={editTitle}
-                                    onChange={(e) => setEditTitle(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    placeholder="Document name"
-                                    autoFocus
-                                />
-                                <input
-                                    type="text"
-                                    value={editTags}
-                                    onChange={(e) => setEditTags(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    placeholder="Tags (comma-separated)"
-                                />
-                                <div className="edit-actions">
-                                    <button onClick={handleSave} className="btn-icon-sm success">
-                                        <Icon name="Check" size={16} />
-                                    </button>
-                                    <button onClick={() => {
-                                        setIsEditing(false);
-                                        setEditTitle(doc.title);
-                                        setEditTags(doc.tags.join(', '));
-                                    }} className="btn-icon-sm">
-                                        <Icon name="X" size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="doc-list-info">
-                                    <h3 className="doc-list-title">{doc.title}</h3>
-                                    <div className="doc-list-meta">
-                                        {doc.tags.length > 0 && (
-                                            <div className="doc-list-tags">
-                                                {doc.tags.map((tag, i) => (
-                                                    <span key={i} className="tag-pill">{tag}</span>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <span className="doc-list-date">{new Date(doc.uploadDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                    </div>
-                                </div>
-                                
-                                <div className="doc-list-actions" onClick={(e) => e.stopPropagation()}>
-                                    <button onClick={() => onView(doc)} className="btn-icon" title="View">
-                                        <Icon name="Eye" size={18} />
-                                    </button>
-                                    <button onClick={() => onDownload(doc)} className="btn-icon" title="Download">
-                                        <Icon name="Download" size={18} />
-                                    </button>
-                                    <button onClick={() => setIsEditing(true)} className="btn-icon" title="Edit">
-                                        <Icon name="Edit3" size={18} />
-                                    </button>
-                                    <button onClick={() => onAction('delete', doc.id)} className="btn-icon danger" title="Delete">
-                                        <Icon name="Trash2" size={18} />
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                );
-            }
+<!-- RESEARCH -->
+<section id="research">
+  <p class="s-label reveal">Publications & Certifications</p>
+  <h2 class="s-title reveal">Research</h2>
+  <div class="research-grid">
+    <div class="pub-card reveal">
+      <div class="pub-index">Publication 01</div>
+      <div class="pub-title">Bijective Pairing for Encoding Natural Numbers</div>
+      <p class="pub-desc">Novel bijective pairing functions for efficient encoding of natural numbers — foundational work in cryptographic and information-theoretic contexts. Published on IACR ePrint Archive, 2025.</p>
+      <a href="https://eprint.iacr.org/2025/1244" target="_blank" class="pub-link">eprint.iacr.org/2025/1244 →</a>
+    </div>
+    <div class="pub-card reveal">
+      <div class="pub-index">Publication 02</div>
+      <div class="pub-title">Position-Based Commitment Protocol</div>
+      <p class="pub-desc">Research on commitment protocols based on spatial positioning, exploring novel cryptographic primitives and their applications in secure multi-party computation. Preprints.org, 2025.</p>
+      <a href="https://preprints.org/manuscript/202508.0584/v1" target="_blank" class="pub-link">preprints.org/manuscript/202508.0584 →</a>
+    </div>
+  </div>
+  <div class="cert-row">
+    <div class="cert-card reveal">
+      <span class="cert-icon">🏆</span>
+      <div>
+        <div class="cert-name">AWS Certified Machine Learning</div>
+        <div class="cert-by">Amazon Web Services</div>
+      </div>
+    </div>
+    <div class="cert-card reveal">
+      <span class="cert-icon">🎓</span>
+      <div>
+        <div class="cert-name">Deep Learning Specialization</div>
+        <div class="cert-by">deeplearning.ai · Coursera</div>
+      </div>
+    </div>
+  </div>
+</section>
 
-            return (
-                <div 
-                    className={`doc-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => !isEditing && onClick(doc)}
-                >
-                    <div className="doc-card-icon" style={{ backgroundColor: fileIcon.bg }}>
-                        <div className="doc-icon-label" style={{ color: fileIcon.color }}>
-                            {fileIcon.label}
-                        </div>
-                    </div>
-                    
-                    {isEditing ? (
-                        <div className="doc-edit" onClick={(e) => e.stopPropagation()}>
-                            <input
-                                type="text"
-                                value={editTitle}
-                                onChange={(e) => setEditTitle(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                placeholder="Document name"
-                                autoFocus
-                            />
-                            <input
-                                type="text"
-                                value={editTags}
-                                onChange={(e) => setEditTags(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                placeholder="Tags (comma-separated)"
-                            />
-                            <div className="edit-buttons">
-                                <button onClick={handleSave} className="btn-save">
-                                    <Icon name="Check" size={14} />
-                                </button>
-                                <button onClick={() => {
-                                    setIsEditing(false);
-                                    setEditTitle(doc.title);
-                                    setEditTags(doc.tags.join(', '));
-                                }} className="btn-cancel">
-                                    <Icon name="X" size={14} />
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="doc-card-info">
-                                <h3 className="doc-card-title">{doc.title}</h3>
-                                {doc.tags.length > 0 && (
-                                    <div className="doc-card-tags">
-                                        {doc.tags.slice(0, 2).map((tag, i) => (
-                                            <span key={i} className="tag-pill-sm">{tag}</span>
-                                        ))}
-                                        {doc.tags.length > 2 && (
-                                            <span className="tag-pill-sm more">+{doc.tags.length - 2}</span>
-                                        )}
-                                    </div>
-                                )}
-                                <div className="doc-card-date">{new Date(doc.uploadDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-                            </div>
-                            
-                            <div className="doc-card-actions" onClick={(e) => e.stopPropagation()}>
-                                <button onClick={() => onView(doc)} className="btn-icon-sm" title="View">
-                                    <Icon name="Eye" size={14} />
-                                </button>
-                                <button onClick={() => onDownload(doc)} className="btn-icon-sm" title="Download">
-                                    <Icon name="Download" size={14} />
-                                </button>
-                                <button onClick={() => setIsEditing(true)} className="btn-icon-sm" title="Edit">
-                                    <Icon name="Edit3" size={14} />
-                                </button>
-                                <button onClick={() => onAction('delete', doc.id)} className="btn-icon-sm danger" title="Delete">
-                                    <Icon name="Trash2" size={14} />
-                                </button>
-                            </div>
-                        </>
-                    )}
-                    
-                    {isSelected && (
-                        <div className="selection-check">
-                            <Icon name="Check" size={14} />
-                        </div>
-                    )}
-                </div>
-            );
-        };
+<!-- EDUCATION -->
+<section id="education">
+  <p class="s-label reveal">Academic Background</p>
+  <h2 class="s-title reveal">Education</h2>
+  <div class="edu-grid">
+    <div class="edu-card reveal">
+      <div class="edu-degree">Master of Science</div>
+      <div class="edu-school">University at Albany</div>
+      <div class="edu-major">Computer Science</div>
+      <div class="edu-period">Aug 2016 – Dec 2018 · New York</div>
+    </div>
+    <div class="edu-card reveal">
+      <div class="edu-degree">Bachelor of Technology</div>
+      <div class="edu-school">Ramaiah University</div>
+      <div class="edu-major">Computer Science & Engineering</div>
+      <div class="edu-period">May 2010 – May 2014 · India</div>
+    </div>
+  </div>
+</section>
 
-        function ResumeManager() {
-            const [documents, setDocuments] = useState([]);
-            const [filteredDocs, setFilteredDocs] = useState([]);
-            const [selectedDoc, setSelectedDoc] = useState(null);
-            const [searchQuery, setSearchQuery] = useState('');
-            const [selectedTags, setSelectedTags] = useState([]);
-            const [isDragging, setIsDragging] = useState(false);
-            const [showUploadModal, setShowUploadModal] = useState(false);
-            const [viewingDoc, setViewingDoc] = useState(null);
-            const [viewMode, setViewMode] = useState('grid');
-            const [showScrollTop, setShowScrollTop] = useState(false);
-            const [showAllTags, setShowAllTags] = useState(false);
-            const fileInputRef = useRef(null);
+<!-- CONTACT -->
+<section id="contact">
+  <h2 class="contact-headline reveal">Open to new opportunities.</h2>
+  <p class="contact-sub reveal">Senior AI/ML roles · Research collaborations · Consulting</p>
+  <div class="contact-grid reveal">
+    <a href="mailto:manideepdev01@gmail.com" class="contact-btn primary">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+      manideepdev01@gmail.com
+    </a>
+    <a href="tel:5184232488" class="contact-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5 12.8 12.8 0 0 0 2.8.7A2 2 0 0 1 22 16.9z"/></svg>
+      (518) 423-2488
+    </a>
+    <a href="https://linkedin.com/in/manideep-thotakura" target="_blank" class="contact-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+      LinkedIn
+    </a>
+    <a href="https://github.com/manideepthotakura" target="_blank" class="contact-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 0 0 2 12c0 4.4 2.9 8.2 6.8 9.5.5.1.7-.2.7-.5v-1.7C6.7 20 6 17.7 6 17.7c-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.4-1.1.6-1.3-2.2-.3-4.5-1.1-4.5-4.8 0-1.1.4-1.9 1-2.6-.1-.3-.4-1.2.1-2.5 0 0 .8-.3 2.8 1a9.7 9.7 0 0 1 5 0c2-.3 2.8-1 2.8-1 .5 1.3.2 2.2.1 2.5.6.7 1 1.5 1 2.6 0 3.7-2.3 4.5-4.5 4.8.4.3.7 1 .7 2v3c0 .3.2.6.7.5C19.1 20.2 22 16.4 22 12A10 10 0 0 0 12 2z"/></svg>
+      GitHub
+    </a>
+  </div>
+</section>
 
-            useEffect(() => {
-                loadDocuments();
-            }, []);
+<footer>
+  <p class="foot-l">© 2025 Manideep Thotakura · All rights reserved.</p>
+  <p class="foot-r">MS Computer Science · University at Albany · AWS Certified ML</p>
+</footer>
 
-            useEffect(() => {
-                filterDocuments();
-            }, [documents, searchQuery, selectedTags]);
+<script>
+// ── SCROLL TO TOP ──
+const scrollBtn = document.getElementById('scrolltop');
+window.addEventListener('scroll', () => {
+  scrollBtn.classList.toggle('show', window.scrollY > 400);
+});
 
-            useEffect(() => {
-                const handleScroll = () => {
-                    setShowScrollTop(window.scrollY > 300);
-                };
+// ── ACTIVE NAV ──
+const sections = document.querySelectorAll('section[id], div[id]');
+const navLinks = document.querySelectorAll('.nav-menu a');
+window.addEventListener('scroll', () => {
+  let cur = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 120) cur = s.id; });
+  navLinks.forEach(a => {
+    const href = a.getAttribute('href').replace('#','');
+    a.classList.toggle('active', href === cur);
+  });
+});
 
-                window.addEventListener('scroll', handleScroll);
-                return () => window.removeEventListener('scroll', handleScroll);
-            }, []);
+// ── SCROLL REVEAL ──
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach((e, i) => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add('in'), i * 60); } });
+}, { threshold: 0.06 });
+document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
 
-            const loadDocuments = async () => {
-                const docs = await getAllDocuments();
-                setDocuments(docs);
-            };
+// ── SEARCH ──
+const searchInput = document.getElementById('portfolio-search');
+const clearBtn = document.getElementById('search-clear');
+const resultsBox = document.getElementById('search-results');
 
-            const filterDocuments = () => {
-                let filtered = documents;
+// All searchable content
+const content = [
+  {
+    section: 'Experience',
+    title: 'Barclays — Sr. AI/ML Scientist',
+    body: 'End-to-end ML pipelines on AWS. Generative AI with GPT and Hugging Face Transformers. Deep learning (RNNs, LSTMs) with PyTorch. XGBoost/LightGBM gradient boosting. MLOps with MLflow, Docker, Kubernetes, Jenkins. Spark Streaming and Kinesis for real-time inference. 40% prediction throughput increase. 25% model accuracy improvement. 35% metadata discoverability. 20% operational efficiency. Reinforcement learning. NLP with BERT and Transformers. Computer vision with OpenCV and Faster R-CNN. Jersey City, NJ. May 2024 to Present.',
+    anchor: '#experience'
+  },
+  {
+    section: 'Experience',
+    title: 'Visa — AI/ML Scientist',
+    body: 'NLP models with BERT and spaCy. Intent classification, NER, sentiment analysis. Azure Databricks and Apache Spark. 40% reduction in data transformation time. 30% NLP accuracy improvement. 25% forecast accuracy improvement. Azure ML, ADF, Synapse, Cognitive Services. FastAPI REST APIs. YOLO object detection. LightGBM and XGBoost. Optuna hyperparameter tuning. Azure DevOps CI/CD. Kafka real-time streaming. ELK Stack monitoring. Power BI and Tableau dashboards. New York, NY. October 2022 to April 2024.',
+    anchor: '#experience'
+  },
+  {
+    section: 'Experience',
+    title: 'Unum Group — Machine Learning Engineer',
+    body: 'Google Cloud Dataflow and BigQuery. Scalable ML pipelines. CNNs and LSTMs for time series. Transfer Learning. Scikit-learn, Keras, TensorFlow. NLP with spaCy and NLTK. Computer vision with OpenCV and YOLO. Bayesian methods and probability theory. Apache Spark and Hadoop distributed processing. 20% business planning accuracy improvement. CI/CD MLOps practices. Chattanooga, Tennessee. July 2020 to September 2022.',
+    anchor: '#experience'
+  },
+  {
+    section: 'Experience',
+    title: 'Sutter Health — Data Scientist',
+    body: 'Data wrangling and cleaning with Python and R. Sentiment analysis and NLP models for unstructured text. Scikit-learn classification regression clustering. Feature engineering and data transformation. Google Cloud AI Hub AutoML. Cross-functional Agile Kanban. MySQL AWS EC2 S3 RDS. Healthcare analytics. Sacramento, California. January 2019 to June 2020.',
+    anchor: '#experience'
+  },
+  {
+    section: 'Experience',
+    title: 'Valtech — Business / Data Analyst',
+    body: 'Exploratory Data Analysis EDA. Regression modeling. Hypothesis testing. AWS Athena large dataset querying. Python data wrangling cleaning transformation. Keras machine learning models. AWS Glue RDS S3. Tableau data visualization. SQL ETL. GitHub. Gujarat India. May 2014 to April 2016.',
+    anchor: '#experience'
+  },
+  {
+    section: 'Skills',
+    title: 'ML / AI — PyTorch, TensorFlow, Hugging Face, XGBoost',
+    body: 'PyTorch TensorFlow Hugging Face GPT Models Scikit-learn Keras XGBoost LightGBM MLflow Optuna Transfer Learning Reinforcement Learning deep learning machine learning artificial intelligence neural networks',
+    anchor: '#skills'
+  },
+  {
+    section: 'Skills',
+    title: 'Deep Learning — RNNs, LSTMs, CNNs, BERT, Transformers',
+    body: 'RNNs LSTMs GRUs GANs CNNs BERT Transformers attention mechanism sequence models generative models',
+    anchor: '#skills'
+  },
+  {
+    section: 'Skills',
+    title: 'Cloud — AWS, Azure, Google Cloud',
+    body: 'AWS Lambda Glue S3 DynamoDB Kinesis EMR Step Functions Azure ML Synapse ADF Cognitive Services Google Cloud AI BigQuery Dataflow cloud computing serverless',
+    anchor: '#skills'
+  },
+  {
+    section: 'Skills',
+    title: 'NLP & Computer Vision — BERT, YOLO, spaCy',
+    body: 'BERT spaCy NLTK YOLO Faster R-CNN OpenCV NER named entity recognition sentiment analysis intent classification object detection image processing computer vision natural language processing',
+    anchor: '#skills'
+  },
+  {
+    section: 'Skills',
+    title: 'MLOps & DevOps — Docker, Kubernetes, Jenkins',
+    body: 'Docker Kubernetes Jenkins Airflow Terraform FastAPI Flask CI/CD GitLab GitHub Actions deployment automation model lifecycle MLOps containerization orchestration',
+    anchor: '#skills'
+  },
+  {
+    section: 'Skills',
+    title: 'Big Data — Spark, Kafka, Hadoop',
+    body: 'Apache Spark Kafka Hadoop PySpark Snowflake PostgreSQL MongoDB Hive Flink distributed computing big data ETL pipelines data engineering',
+    anchor: '#skills'
+  },
+  {
+    section: 'Research',
+    title: 'Publication — Bijective Pairing for Encoding Natural Numbers',
+    body: 'Bijective pairing functions encoding natural numbers cryptography information theory IACR ePrint archive 2025 eprint.iacr.org',
+    anchor: '#research'
+  },
+  {
+    section: 'Research',
+    title: 'Publication — Position-Based Commitment Protocol',
+    body: 'Position based commitment protocol cryptographic primitives secure multi-party computation spatial positioning preprints.org 2025',
+    anchor: '#research'
+  },
+  {
+    section: 'Research',
+    title: 'Certification — AWS Certified Machine Learning',
+    body: 'AWS Amazon Web Services certified machine learning certification',
+    anchor: '#research'
+  },
+  {
+    section: 'Research',
+    title: 'Certification — Deep Learning Specialization',
+    body: 'Deep learning specialization deeplearning.ai Coursera Andrew Ng certification',
+    anchor: '#research'
+  },
+  {
+    section: 'Education',
+    title: 'MS Computer Science — University at Albany',
+    body: 'Masters degree Master of Science Computer Science University at Albany New York 2016 2018 graduate',
+    anchor: '#education'
+  },
+  {
+    section: 'Education',
+    title: 'B.Tech Computer Science — Ramaiah University',
+    body: 'Bachelor of Technology BTech Computer Science Engineering Ramaiah University India 2010 2014 undergraduate',
+    anchor: '#education'
+  },
+  {
+    section: 'Contact',
+    title: 'Contact Manideep',
+    body: 'email manideepdev01@gmail.com phone 518 423 2488 LinkedIn GitHub hire available new roles consulting',
+    anchor: '#contact'
+  }
+];
 
-                if (searchQuery) {
-                    filtered = filtered.filter(doc =>
-                        doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        doc.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-                    );
-                }
+function highlight(text, query) {
+  const words = query.trim().split(/\s+/).filter(w => w.length > 1);
+  let result = text;
+  words.forEach(w => {
+    const re = new RegExp(`(${w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+    result = result.replace(re, '<mark>$1</mark>');
+  });
+  return result;
+}
 
-                if (selectedTags.length > 0) {
-                    filtered = filtered.filter(doc =>
-                        selectedTags.every(tag => doc.tags.includes(tag))
-                    );
-                }
+function getSnippet(body, query) {
+  const words = query.trim().toLowerCase().split(/\s+/).filter(w => w.length > 1);
+  const lower = body.toLowerCase();
+  let best = 0;
+  words.forEach(w => {
+    const idx = lower.indexOf(w);
+    if (idx !== -1) best = Math.max(0, idx - 40);
+  });
+  let snippet = body.substring(best, best + 160);
+  if (best > 0) snippet = '…' + snippet;
+  if (best + 160 < body.length) snippet += '…';
+  return snippet;
+}
 
-                setFilteredDocs(filtered);
-            };
+function doSearch(q) {
+  const query = q.trim();
+  clearBtn.style.display = query ? 'block' : 'none';
 
-            const handleFileUpload = async (files) => {
-                for (const file of files) {
-                    const reader = new FileReader();
-                    reader.onload = async (e) => {
-                        const base64 = e.target.result.split(',')[1];
-                        
-                        const doc = {
-                            title: file.name.replace(/\.[^/.]+$/, ''),
-                            fileName: file.name,
-                            fileType: file.type,
-                            fileData: base64,
-                            fileSize: file.size,
-                            tags: [],
-                            uploadDate: new Date().toISOString()
-                        };
-                        
-                        await saveDocument(doc);
-                        await loadDocuments();
-                    };
-                    reader.readAsDataURL(file);
-                }
-                setShowUploadModal(false);
-            };
+  if (!query || query.length < 2) {
+    resultsBox.style.display = 'none';
+    resultsBox.innerHTML = '';
+    return;
+  }
 
-            const handleDragOver = (e) => {
-                e.preventDefault();
-                setIsDragging(true);
-            };
+  const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 1);
+  const scored = content.map(item => {
+    const searchable = (item.section + ' ' + item.title + ' ' + item.body).toLowerCase();
+    let score = 0;
+    words.forEach(w => {
+      const count = (searchable.match(new RegExp(w, 'g')) || []).length;
+      score += count;
+      if (item.title.toLowerCase().includes(w)) score += 5;
+      if (item.section.toLowerCase().includes(w)) score += 2;
+    });
+    return { ...item, score };
+  }).filter(i => i.score > 0).sort((a, b) => b.score - a.score);
 
-            const handleDragLeave = (e) => {
-                if (e.currentTarget === e.target) {
-                    setIsDragging(false);
-                }
-            };
+  resultsBox.style.display = 'block';
 
-            const handleDrop = (e) => {
-                e.preventDefault();
-                setIsDragging(false);
-                const files = Array.from(e.dataTransfer.files).filter(file =>
-                    file.type === 'application/pdf' ||
-                    file.type.includes('word') ||
-                    file.type.includes('document') ||
-                    file.type === 'text/plain'
-                );
-                if (files.length > 0) {
-                    handleFileUpload(files);
-                }
-            };
+  if (!scored.length) {
+    resultsBox.innerHTML = `<div class="no-results">No results found for "<strong>${query}</strong>" — try a different keyword.</div>`;
+    return;
+  }
 
-            const handleFileSelect = (e) => {
-                const files = Array.from(e.target.files);
-                handleFileUpload(files);
-            };
+  resultsBox.innerHTML = scored.slice(0, 6).map(item => `
+    <div class="result-item" onclick="document.querySelector('${item.anchor}').scrollIntoView({behavior:'smooth'})">
+      <div class="result-section">${item.section}</div>
+      <div class="result-title">${highlight(item.title, query)}</div>
+      <div class="result-snippet">${highlight(getSnippet(item.body, query), query)}</div>
+    </div>
+  `).join('');
+}
 
-            const handleDocAction = async (action, id, data) => {
-                if (action === 'delete') {
-                    await deleteDocument(id);
-                    if (selectedDoc === id) {
-                        setSelectedDoc(null);
-                    }
-                    await loadDocuments();
-                } else if (action === 'update') {
-                    await updateDocument(id, data);
-                    await loadDocuments();
-                }
-            };
-
-            const toggleSelection = (doc) => {
-                if (selectedDoc === doc.id) {
-                    setSelectedDoc(null);
-                } else {
-                    setSelectedDoc(doc.id);
-                }
-            };
-
-            const base64ToBlob = (base64, mimeType) => {
-                try {
-                    const byteCharacters = atob(base64);
-                    const byteNumbers = new Array(byteCharacters.length);
-                    for (let i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    }
-                    const byteArray = new Uint8Array(byteNumbers);
-                    return new Blob([byteArray], { type: mimeType });
-                } catch (err) {
-                    console.error('Error converting base64 to blob:', err);
-                    return null;
-                }
-            };
-
-            const handleSingleDownload = (doc) => {
-                const blob = base64ToBlob(doc.fileData, doc.fileType);
-                if (blob) {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = doc.fileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    setTimeout(() => URL.revokeObjectURL(url), 100);
-                }
-            };
-
-            const handleView = (doc) => {
-                setViewingDoc(doc);
-            };
-
-            const toggleTag = (tag) => {
-                setSelectedTags(prev =>
-                    prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-                );
-            };
-
-            const scrollToTop = () => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            };
-
-            const allTags = [...new Set(documents.flatMap(doc => doc.tags))].sort();
-            const MAX_VISIBLE_TAGS = 8;
-            const visibleTags = showAllTags ? allTags : allTags.slice(0, MAX_VISIBLE_TAGS);
-            const hasMoreTags = allTags.length > MAX_VISIBLE_TAGS;
-
-            return (
-                <div 
-                    className="app"
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                >
-                    {isDragging && (
-                        <div className="drag-overlay">
-                            <div className="drag-content">
-                                <div className="drag-content-icon">
-                                    <Icon name="Upload" size={64} />
-                                </div>
-                                <h2>Drop files here</h2>
-                                <p>Release to upload your documents</p>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="header">
-                        <div className="header-container">
-                            <div className="logo">
-                                <div className="logo-icon">
-                                    <Icon name="FileText" size={24} />
-                                </div>
-                                <h1>Sync Doc</h1>
-                            </div>
-
-                            <div className="header-actions">
-                                <div className="view-toggle">
-                                    <button 
-                                        className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                                        onClick={() => setViewMode('grid')}
-                                    >
-                                        <Icon name="Grid" size={18} />
-                                    </button>
-                                    <button 
-                                        className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-                                        onClick={() => setViewMode('list')}
-                                    >
-                                        <Icon name="List" size={18} />
-                                    </button>
-                                </div>
-
-                                <button className="btn-primary" onClick={() => setShowUploadModal(true)}>
-                                    <Icon name="Plus" size={20} />
-                                    <span>Upload</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="search-container">
-                        <div className="search-wrapper">
-                            <div className="header-search">
-                                <Icon name="Search" className="search-icon" size={20} />
-                                <input
-                                    type="text"
-                                    placeholder="Search documents..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="main-content">
-                        <div className="content-header">
-                            <div className="doc-stats">
-                                <div className="stat-item">
-                                    <span className="stat-label">Total Documents</span>
-                                    <span className="stat-value">{documents.length}</span>
-                                </div>
-                                {filteredDocs.length !== documents.length && (
-                                    <div className="stat-item">
-                                        <span className="stat-label">Filtered</span>
-                                        <span className="stat-value">{filteredDocs.length}</span>
-                                    </div>
-                                )}
-                                <div className="security-badge">
-                                    <div className="security-icon">
-                                        <Icon name="Shield" size={18} />
-                                    </div>
-                                    <div className="security-text">
-                                        <div className="security-title">100% Secure</div>
-                                        <div className="security-description">Data stored locally on your device</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {allTags.length > 0 && (
-                            <div className="filter-bar">
-                                <div className="filter-header">
-                                    <div className="filter-title">
-                                        <Icon name="Filter" size={16} />
-                                        Filter by tags
-                                    </div>
-                                    <div className="filter-actions">
-                                        {selectedTags.length > 0 && (
-                                            <button className="clear-filters" onClick={() => setSelectedTags([])}>
-                                                Clear filters
-                                            </button>
-                                        )}
-                                        {hasMoreTags && (
-                                            <button className="show-more-btn" onClick={() => setShowAllTags(!showAllTags)}>
-                                                {showAllTags ? 'Show less' : `Show all (${allTags.length})`}
-                                                <Icon name={showAllTags ? "ChevronUp" : "ChevronDown"} size={14} style={{marginLeft: '4px'}} />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="tag-filters">
-                                    {visibleTags.map(tag => (
-                                        <button
-                                            key={tag}
-                                            className={`tag-filter ${selectedTags.includes(tag) ? 'active' : ''}`}
-                                            onClick={() => toggleTag(tag)}
-                                        >
-                                            {tag}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {filteredDocs.length === 0 && documents.length === 0 ? (
-                            <div className="empty-state">
-                                <div className="empty-icon">
-                                    <Icon name="FileText" size={56} />
-                                </div>
-                                <h2>No documents yet</h2>
-                                <p>Upload your first document to get started with organizing your files</p>
-                                <button className="btn-primary" onClick={() => setShowUploadModal(true)}>
-                                    <Icon name="Plus" size={20} />
-                                    Upload Document
-                                </button>
-                            </div>
-                        ) : filteredDocs.length === 0 ? (
-                            <div className="empty-state">
-                                <div className="empty-icon">
-                                    <Icon name="Search" size={56} />
-                                </div>
-                                <h2>No results found</h2>
-                                <p>Try adjusting your search or filters to find what you're looking for</p>
-                            </div>
-                        ) : (
-                            <div className={viewMode === 'grid' ? 'document-grid' : 'document-list'}>
-                                {filteredDocs.map(doc => (
-                                    <DocumentCard
-                                        key={doc.id}
-                                        doc={doc}
-                                        isSelected={selectedDoc === doc.id}
-                                        onClick={toggleSelection}
-                                        onAction={handleDocAction}
-                                        onDownload={handleSingleDownload}
-                                        onView={handleView}
-                                        viewMode={viewMode}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {showUploadModal && (
-                        <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
-                            <div className="modal" onClick={(e) => e.stopPropagation()}>
-                                <div className="modal-header">
-                                    <h2>Upload Documents</h2>
-                                    <p>Add PDF, Word, or text files to your library</p>
-                                </div>
-                                <div className={`drop-zone ${isDragging ? 'dragging' : ''}`}>
-                                    <div className="drop-icon">
-                                        <Icon name="Upload" size={40} />
-                                    </div>
-                                    <div className="drop-text">Drag and drop files here</div>
-                                    <div className="drop-hint">or click browse to select files</div>
-                                </div>
-                                <div className="modal-actions">
-                                    <button className="btn-modal secondary" onClick={() => setShowUploadModal(false)}>
-                                        Cancel
-                                    </button>
-                                    <button className="btn-modal primary" onClick={() => fileInputRef.current?.click()}>
-                                        Browse Files
-                                    </button>
-                                </div>
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    multiple
-                                    accept=".pdf,.doc,.docx,.txt"
-                                    onChange={handleFileSelect}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {viewingDoc && (
-                        <div className="preview-modal" onClick={() => setViewingDoc(null)}>
-                            <div className="preview-container" onClick={(e) => e.stopPropagation()}>
-                                <div className="preview-header">
-                                    <div className="preview-info">
-                                        <h2>{viewingDoc.title}</h2>
-                                        <div className="preview-meta">
-                                            {viewingDoc.tags.length > 0 && (
-                                                <div className="preview-tags">
-                                                    {viewingDoc.tags.map((tag, i) => (
-                                                        <span key={i} className="tag-pill">{tag}</span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            <span className="doc-list-date">
-                                                {new Date(viewingDoc.uploadDate).toLocaleDateString('en-US', { 
-                                                    month: 'long', 
-                                                    day: 'numeric', 
-                                                    year: 'numeric' 
-                                                })}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => setViewingDoc(null)} className="btn-close">
-                                        <Icon name="X" size={24} />
-                                    </button>
-                                </div>
-                                <div className="preview-body">
-                                    {viewingDoc.fileType === 'application/pdf' || viewingDoc.fileType === 'text/plain' ? (
-                                        <iframe 
-                                            src={URL.createObjectURL(base64ToBlob(viewingDoc.fileData, viewingDoc.fileType))} 
-                                            className="preview-frame"
-                                            title={viewingDoc.title}
-                                        />
-                                    ) : (
-                                        <div className="preview-placeholder">
-                                            <Icon name="FileText" size={64} />
-                                            <p>Preview not available for this file type</p>
-                                            <p className="preview-hint">Click download to view the file</p>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="preview-footer">
-                                    <div style={{ flex: 1, fontSize: '14px', color: '#6c757d' }}>
-                                        {viewingDoc.fileType === 'application/pdf' && (
-                                            <span style={{ marginRight: '16px' }}>
-                                                📄 PDF Document
-                                            </span>
-                                        )}
-                                        <span>
-                                            📦 Size: {(viewingDoc.fileSize / 1024).toFixed(2)} KB
-                                        </span>
-                                    </div>
-                                    <button onClick={() => handleSingleDownload(viewingDoc)} className="btn-primary">
-                                        <Icon name="Download" size={18} />
-                                        Download
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showScrollTop && (
-                        <button className="scroll-to-top visible" onClick={scrollToTop} title="Scroll to top">
-                            <Icon name="ChevronUp" size={24} />
-                        </button>
-                    )}
-                </div>
-            );
-        }
-
-        ReactDOM.render(<ResumeManager />, document.getElementById('root'));
-    </script>
+searchInput.addEventListener('input', e => doSearch(e.target.value));
+clearBtn.addEventListener('click', () => {
+  searchInput.value = '';
+  clearBtn.style.display = 'none';
+  resultsBox.style.display = 'none';
+  resultsBox.innerHTML = '';
+  searchInput.focus();
+});
+document.querySelectorAll('.hint-chip').forEach(c => {
+  c.addEventListener('click', () => {
+    searchInput.value = c.dataset.q;
+    doSearch(c.dataset.q);
+    document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' });
+  });
+});
+</script>
 </body>
 </html>
