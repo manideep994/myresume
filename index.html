@@ -383,37 +383,39 @@ section.active{display:block;}
 <section id="s-practice">
   <div class="practice-layout">
     <aside class="practice-sidebar" id="practice-sidebar">
-      <div class="ps-header">
-        <div class="ps-title">Challenges</div>
-        <div class="ps-filter">
-          <button class="pf-btn active" onclick="filterChallenges('all',this)">All</button>
-          <button class="pf-btn" onclick="filterChallenges('Easy',this)">Easy</button>
-          <button class="pf-btn" onclick="filterChallenges('Medium',this)">Medium</button>
-          <button class="pf-btn" onclick="filterChallenges('Hard',this)">Hard</button>
-        </div>
-      </div>
-      <div id="challenge-list"></div>
-      <!-- SANDBOX section -->
-      <div class="sandbox-section">
-        <div class="sandbox-label">🔬 Free Sandbox</div>
-        <div class="sandbox-item" id="sb-ecommerce" onclick="loadSandbox('ecommerce')">
-          <div class="si-name">🛒 E-Commerce</div>
-          <div class="si-desc">orders, products, customers</div>
-        </div>
-        <div class="sandbox-item" id="sb-school" onclick="loadSandbox('school')">
-          <div class="si-name">🏫 School</div>
-          <div class="si-desc">students, grades, courses</div>
-        </div>
-        <div class="sandbox-item" id="sb-movies" onclick="loadSandbox('movies')">
-          <div class="si-name">🎬 Movies</div>
-          <div class="si-desc">films, actors, ratings</div>
-        </div>
-        <div class="sandbox-item" id="sb-hospital" onclick="loadSandbox('hospital')">
-          <div class="si-name">🏥 Hospital</div>
-          <div class="si-desc">patients, doctors, visits</div>
-        </div>
-      </div>
-    </aside>
+  <!-- SANDBOX section - NOW AT TOP -->
+  <div class="sandbox-section">
+    <div class="sandbox-label">🔬 Free Sandbox</div>
+    <div class="sandbox-item" id="sb-ecommerce" onclick="loadSandbox('ecommerce')">
+      <div class="si-name">🛒 E-Commerce</div>
+      <div class="si-desc">orders, products, customers</div>
+    </div>
+    <div class="sandbox-item" id="sb-school" onclick="loadSandbox('school')">
+      <div class="si-name">🏫 School</div>
+      <div class="si-desc">students, grades, courses</div>
+    </div>
+    <div class="sandbox-item" id="sb-movies" onclick="loadSandbox('movies')">
+      <div class="si-name">🎬 Movies</div>
+      <div class="si-desc">films, actors, ratings</div>
+    </div>
+    <div class="sandbox-item" id="sb-hospital" onclick="loadSandbox('hospital')">
+      <div class="si-name">🏥 Hospital</div>
+      <div class="si-desc">patients, doctors, visits</div>
+    </div>
+  </div>
+
+  <!-- Challenges section - NOW AT BOTTOM -->
+  <div class="ps-header">
+    <div class="ps-title">Challenges</div>
+    <div class="ps-filter">
+      <button class="pf-btn active" onclick="filterChallenges('all',this)">All</button>
+      <button class="pf-btn" onclick="filterChallenges('Easy',this)">Easy</button>
+      <button class="pf-btn" onclick="filterChallenges('Medium',this)">Medium</button>
+      <button class="pf-btn" onclick="filterChallenges('Hard',this)">Hard</button>
+    </div>
+  </div>
+  <div id="challenge-list"></div>
+</aside>
 
     <div class="editor-area">
       <!-- Mobile toggle button -->
@@ -1915,6 +1917,10 @@ buildPractice();
 buildCheatsheet();
 startQuiz();
 initDB();
+// Load default sandbox when practice section is first opened
+setTimeout(() => {
+  loadSandbox('employees');
+}, 500);
 </script>
 </body>
 </html>
