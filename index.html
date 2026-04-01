@@ -761,11 +761,13 @@ body:`
 
 <h2>Join Type Summary</h2>
 <table class="compare-table">
-<tr><th>Type</th><th>Returns</th><th>Unmatched rows</th></tr>
+<thead><tr><th>Type</th><th>Returns</th><th>Unmatched rows</th></tr></thead>
+<tbody>
 <tr><td>INNER JOIN</td><td>Only rows matching in both</td><td>Excluded from both sides</td></tr>
 <tr><td>LEFT JOIN</td><td>All left + matching right</td><td>Left kept, right = NULL</td></tr>
 <tr><td>RIGHT JOIN</td><td>All right + matching left</td><td>Right kept, left = NULL</td></tr>
 <tr><td>FULL OUTER JOIN</td><td>All rows from both</td><td>Missing side = NULL</td></tr>
+</tbody>
 </table>
 
 <h2>Anti-JOIN Pattern (Find Orphans)</h2>
@@ -961,13 +963,15 @@ body:`
 
 <h2>Constraints</h2>
 <table class="compare-table">
-<tr><th>Constraint</th><th>Purpose</th></tr>
+<thead><tr><th>Constraint</th><th>Purpose</th></tr></thead>
+<tbody>
 <tr><td>PRIMARY KEY</td><td>Uniquely identifies each row — must be unique and not NULL</td></tr>
 <tr><td>NOT NULL</td><td>The column must always have a value</td></tr>
 <tr><td>UNIQUE</td><td>No two rows can have the same value in this column</td></tr>
 <tr><td>DEFAULT x</td><td>Use x if no value is provided on INSERT</td></tr>
 <tr><td>CHECK(cond)</td><td>Reject any value that doesn't satisfy the condition</td></tr>
 <tr><td>FOREIGN KEY</td><td>Value must exist in the referenced table (referential integrity)</td></tr>
+</tbody>
 </table>
 `},
 
@@ -1026,11 +1030,13 @@ body:`
 
 <h2>ACID Properties</h2>
 <table class="compare-table">
-<tr><th>Property</th><th>Meaning</th></tr>
+<thead><tr><th>Property</th><th>Meaning</th></tr></thead>
+<tbody>
 <tr><td><strong>Atomicity</strong></td><td>All operations succeed or all are rolled back. No partial updates.</td></tr>
 <tr><td><strong>Consistency</strong></td><td>A transaction takes the database from one valid state to another. Constraints are always satisfied.</td></tr>
 <tr><td><strong>Isolation</strong></td><td>Concurrent transactions don't see each other's partial changes.</td></tr>
 <tr><td><strong>Durability</strong></td><td>Once committed, data survives system crashes (written to durable storage).</td></tr>
+</tbody>
 </table>
 `},
 
@@ -1670,7 +1676,7 @@ function switchDB(key,btn){
   activeDBKey=key;
   document.querySelectorAll('.db-btn').forEach(b=>b.classList.remove('active'));
   btn?.classList.add('active');
-  // Update the schema display
+  // Update the schema display if in sandbox mode
   if(currentMode==='sandbox'){
     const sc=SANDBOX_SCHEMAS[key];
     document.getElementById('ea-title').innerHTML=`${sc.name} <span style="color:var(--text3);font-size:.75rem;font-weight:400;">Sandbox</span>`;
@@ -1678,8 +1684,13 @@ function switchDB(key,btn){
     document.getElementById('ea-schema').innerHTML='<b>Tables:</b> '+sc.schema;
     document.getElementById('sql-editor').placeholder=`-- Free sandbox — ${sc.name}\n-- ${sc.hint}\n`;
     document.getElementById('run-status').textContent='';
-    document.getElementById('result-panel').innerHTML='<div class="rp-empty">▲ Write any SQL to explore the database.</div>';
+    clearResultPanel();
   }
+}
+
+// Helper function to clear result panel (prevents stacking)
+function clearResultPanel(){
+  document.getElementById('result-panel').innerHTML = '<div class="rp-empty">▲ Write any SQL to explore this database.</div>';
 }
 
 // ═══════════════════════════════════════
@@ -1728,7 +1739,7 @@ function loadChallenge(id){
   document.getElementById('btn-answer-el').style.display='';
   document.getElementById('sql-editor').value='';
   document.getElementById('sql-editor').placeholder='-- Write your SQL query here...';
-  document.getElementById('result-panel').innerHTML='<div class="rp-empty">▲ Write your query and click Run.</div>';
+  clearResultPanel();
   document.getElementById('run-status').textContent='';
   // update active sandbox items
   document.querySelectorAll('.sandbox-item').forEach(s=>s.classList.remove('active'));
@@ -1750,7 +1761,7 @@ function loadSandbox(key){
   document.getElementById('ea-schema').innerHTML='<b>Tables:</b> '+sc.schema;
   document.getElementById('sql-editor').value='';
   document.getElementById('sql-editor').placeholder=`-- Free sandbox — explore freely!\n-- ${sc.hint}`;
-  document.getElementById('result-panel').innerHTML='<div class="rp-empty">▲ Write any SQL to explore this database.</div>';
+  clearResultPanel();
   document.getElementById('run-status').textContent='';
   // highlight active db buttons
   document.querySelectorAll('.db-btn').forEach(b=>b.classList.remove('active'));
@@ -1789,17 +1800,21 @@ function runSQL(){
 }
 function showHint(){
   if(!currentChallenge)return;
+  // Replace content instead of stacking
+  clearResultPanel();
   const rp=document.getElementById('result-panel');
-  rp.innerHTML=`<div class="rp-hint">💡 <strong>Hint:</strong> ${currentChallenge.hint}</div>`+rp.innerHTML;
+  rp.innerHTML = `<div class="rp-hint">💡 <strong>Hint:</strong> ${currentChallenge.hint}</div>`;
 }
 function showAnswer(){
   if(!currentChallenge)return;
+  // Replace content instead of stacking
+  clearResultPanel();
   const rp=document.getElementById('result-panel');
-  rp.innerHTML=`<div class="rp-answer"><div class="rp-answer-label">👁 SOLUTION</div><div class="rp-answer-code">${currentChallenge.solution}</div></div>`+rp.innerHTML;
+  rp.innerHTML = `<div class="rp-answer"><div class="rp-answer-label">👁 SOLUTION</div><div class="rp-answer-code">${currentChallenge.solution}</div></div>`;
 }
 function resetEditor(){
   document.getElementById('sql-editor').value='';
-  document.getElementById('result-panel').innerHTML='<div class="rp-empty">▲ Run your query to see results.</div>';
+  clearResultPanel();
   document.getElementById('run-status').textContent='';
 }
 function setResult(html){document.getElementById('result-panel').innerHTML=html;}
