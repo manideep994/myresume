@@ -794,6 +794,934 @@ function wbClear(){
 }
 
 // ─── AI ANSWER ENGINE ───
+// Context-aware, detailed answers with conversation memory.
+// Tracks last 5 Q&A pairs so follow-up questions continue naturally.
+// Answers are interview/teaching quality — full explanations with examples.
+
+var wbHistory = []; // stores {q, a} pairs for context
+var MAX_HISTORY = 5;
+
+// Detect if a question is a follow-up based on short length or pronouns
+function isFollowUp(q) {
+  var followUpWords = ['why','how','what about','can you','tell me more','explain more',
+    'give me','example','show me','difference','versus','vs','better','worse',
+    'also','and','but','so','then','next','continue','more','elaborate','deeper',
+    'what else','anything','when','where','who','which','compare'];
+  var short = q.split(' ').length <= 4;
+  var hasFollowUp = followUpWords.some(function(w){ return q.toLowerCase().indexOf(w) !== -1; });
+  return (short || hasFollowUp) && wbHistory.length > 0;
+}
+
+// Build context string from recent history for smarter matching
+function buildContext() {
+  if (!wbHistory.length) return '';
+  return wbHistory.slice(-3).map(function(h){ return h.q; }).join(' ');
+}
+
+function wbAnswer(question) {
+  var q = question.toLowerCase().replace(/[?.!,]/g,'').trim();
+  var context = buildContext();
+  var combined = (context + ' ' + q).toLowerCase();
+
+  var answer = '';
+
+  // Try exact match on current question first
+  answer = matchKB(q);
+
+  // If no match and it looks like a follow-up, try matching against context
+  if (!answer && isFollowUp(q)) {
+    answer = matchKB(combined);
+    if (answer) {
+      // Prefix with a continuation phrase
+      var prefixes = [
+        'Building on what we covered — ',
+        'Great follow-up. To continue from before — ',
+        'Expanding on that — ',
+        'Going deeper into this — ',
+      ];
+      answer = prefixes[Math.floor(Math.random()*prefixes.length)] + answer;
+    }
+  }
+
+  // Still no match — generate a smart contextual fallback
+  if (!answer) {
+    var words = q.split(' ').filter(function(w){ return w.length > 3; });
+    var topic = words.length ? words[words.length-1] : 'that topic';
+    if (isFollowUp(q) && wbHistory.length) {
+      var lastTopic = wbHistory[wbHistory.length-1].q;
+      answer = 'Continuing from "' + lastTopic + '" — ' + topic + ' is a closely related concept. ' +
+        'To understand it fully: first look at how it connects to what we just discussed, then identify what is different. ' +
+        'The key is to see both the similarities and the distinctions between them. ' +
+        'Try to find a real-world scenario where you would use this specific concept instead of the previous one, ' +
+        'and that contrast will make both ideas much clearer in your mind.';
+    } else {
+      answer = smartFallback(topic, q);
+    }
+  }
+
+  // Store in history for context tracking
+  wbHistory.push({ q: question, a: answer });
+  if (wbHistory.length > MAX_HISTORY) wbHistory.shift();
+
+  return answer;
+}
+
+function matchKB(q) {
+  for (var i = 0; i < KB.length; i++) {
+    for (var j = 0; j < KB[i].k.length; j++) {
+      if (q.indexOf(KB[i].k[j]) !== -1) return KB[i].a;
+    }
+  }
+  return '';
+}
+
+function smartFallback(topic, q) {
+  var isWhat  = q.indexOf('what') !== -1;
+  var isHow   = q.indexOf('how') !== -1;
+  var isWhy   = q.indexOf('why') !== -1;
+  var isDiff  = q.indexOf('difference') !== -1 || q.indexOf(' vs ') !== -1;
+
+  if (isDiff) {
+    return 'The difference between these two concepts comes down to purpose and usage. ' +
+      'One is typically used when you need more control and precision, while the other prioritises simplicity and speed. ' +
+      'In an interview context, the key is to explain not just what each one is, but when you would choose one over the other — ' +
+      'interviewers want to see that you understand trade-offs, not just definitions. ' +
+      'Give a concrete example: describe a scenario where you picked one approach and why the other would have been wrong for that situation.';
+  }
+  if (isWhy) {
+    return 'The reason "' + topic + '" matters is because it solves a specific problem that would be painful to deal with otherwise. ' +
+      'In software and teaching, we introduce concepts like this when the alternatives become too complex or error-prone. ' +
+      'Think about what the world looked like before this concept existed — what was harder, slower, or more fragile? ' +
+      'That contrast is exactly what interviewers want you to articulate when they ask "why" questions. ' +
+      'It shows you understand not just the "what" but the motivation and context behind it.';
+  }
+  if (isHow) {
+    return 'To understand how "' + topic + '" works, break it into three layers: ' +
+      'First, the input — what does it start with? ' +
+      'Second, the process — what transformation or logic happens? ' +
+      'Third, the output — what is produced? ' +
+      'In an interview, walking through these three layers shows structured thinking. ' +
+      'After explaining the mechanism, always give a concrete example with real values — ' +
+      'abstract explanations alone rarely impress interviewers as much as a clear, specific demonstration.';
+  }
+  if (isWhat) {
+    return '"' + topic + '" is a concept worth understanding at two levels: the definition and the application. ' +
+      'At the definition level — it describes a specific idea, structure, or behaviour in a system. ' +
+      'At the application level — it solves a real problem you will encounter in practice. ' +
+      'In an interview, define it concisely first (one sentence), then immediately follow with an example. ' +
+      'Interviewers score much higher on candidates who can move quickly from definition to demonstration. ' +
+      'If you are unsure of the exact definition, describe the problem it solves — that often communicates deeper understanding.';
+  }
+  return 'This is a topic that requires both theoretical understanding and practical experience. ' +
+    'In an interview setting, structure your answer clearly: start with a brief definition, ' +
+    'explain the core concept in your own words, give a concrete real-world example, ' +
+    'and if possible mention a trade-off or limitation. ' +
+    'This four-part structure — define, explain, example, trade-off — works for almost any technical question ' +
+    'and signals to the interviewer that you think in a structured, professional way.';
+}
+
+// ─── KNOWLEDGE BASE ───
+// Each entry has keywords (k) and a detailed multi-sentence answer (a)
+var KB = [
+  // Python fundamentals
+  {k:['what is python','about python','python language','python programming'],
+   a:'Python is a high-level, interpreted programming language created by Guido van Rossum in 1991. It is designed around readability — its syntax is intentionally close to plain English, which means you can express complex ideas in fewer lines than in Java or C++. Python is dynamically typed, meaning you do not declare variable types — the interpreter figures it out at runtime. It supports multiple programming paradigms: procedural, object-oriented, and functional. Today Python is the dominant language for data science, machine learning, and AI (thanks to libraries like NumPy, Pandas, and TensorFlow), and it is also widely used for web backends (Django, FastAPI), automation scripting, and API development. In an interview, the key things to highlight are: its simplicity for rapid development, its massive ecosystem of libraries, and its trade-off — it is slower than compiled languages like C++ because it is interpreted.'},
+
+  {k:['python variable','variables in python','variable declaration'],
+   a:'A variable in Python is a named reference to a value stored in memory. Unlike languages like Java or C++, Python uses dynamic typing — you do not declare the type explicitly. You just write: name = "Alice" or age = 25 and Python infers the type automatically. Variables can be reassigned to different types: x = 5 then x = "hello" is perfectly valid. Python uses reference semantics, meaning a variable holds a reference to an object, not the object itself — this becomes important when you work with mutable types like lists. Naming conventions: use lowercase_with_underscores (snake_case) for variables, UPPERCASE for constants, and avoid starting with numbers. In interviews, a common follow-up question is about the difference between mutable and immutable types — integers, strings, and tuples are immutable (cannot be changed), while lists and dictionaries are mutable (can be modified in place).'},
+
+  {k:['for loop','while loop','python loop','iteration','iterate'],
+   a:'Python has two main loop types. A for loop iterates over a sequence — a list, string, range, or any iterable: for i in range(5): print(i) prints 0 through 4. The range() function generates a sequence of numbers and is very commonly used. A while loop runs as long as a condition is True: while count < 10: count += 1. Use for loops when you know how many iterations you need; use while loops when the stopping condition depends on something that changes during execution. Python also has list comprehensions — a concise way to create lists: squares = [x**2 for x in range(10)]. For loop control: break exits the loop immediately, continue skips to the next iteration, and else after a loop runs if the loop completed without hitting a break. In interviews, list comprehensions and the difference between for and while are very commonly tested.'},
+
+  {k:['python function','def ','define function','function in python','return value'],
+   a:'A function is a reusable, named block of code that performs a specific task. You define one with def: def greet(name): return "Hello, " + name. Functions can have default parameter values: def greet(name="World") means calling greet() works fine without arguments. Python supports *args (variable positional arguments) and **kwargs (variable keyword arguments), which allow functions to accept any number of inputs. Functions are first-class objects in Python — you can assign them to variables, pass them as arguments, and return them from other functions. This enables functional programming patterns like map(), filter(), and lambda functions. A lambda is an anonymous single-expression function: double = lambda x: x * 2. In interviews, key topics around functions include: the difference between parameters and arguments, mutable default arguments (a common bug — never use mutable objects like lists as default values), and the concept of closures.'},
+
+  {k:['python list','list in python','list methods','append','sort'],
+   a:'A list is Python\'s most versatile built-in data structure — an ordered, mutable collection that can hold items of any type, including mixed types. Create one with: fruits = ["apple", "banana", "cherry"]. Key operations: append() adds to the end, insert(index, value) adds at a position, remove(value) deletes first occurrence, pop() removes and returns the last item. Slicing lets you extract sub-lists: fruits[1:3] returns items at index 1 and 2. Lists are zero-indexed. Negative indexing works: fruits[-1] is the last item. Sorting: fruits.sort() sorts in place; sorted(fruits) returns a new sorted list. Under the hood, Python lists are dynamic arrays — they automatically resize when they grow. The time complexity for appending is O(1) amortised, but inserting at the beginning is O(n). In interviews, you will often be asked to compare lists with tuples (tuples are immutable, faster, and use less memory) and with sets (sets store only unique values and are unordered).'},
+
+  {k:['python dictionary','dict in python','dictionary methods','key value'],
+   a:'A dictionary is Python\'s hash map implementation — it stores key-value pairs and provides O(1) average-case lookup, insertion, and deletion. Create one with: person = {"name": "Ali", "age": 25}. Access values with person["name"] or safer: person.get("name", "default"). Keys must be immutable (strings, numbers, tuples). Values can be anything. Key methods: keys() returns all keys, values() returns all values, items() returns key-value pairs as tuples — useful for iteration: for key, value in person.items(). The update() method merges another dictionary in. Since Python 3.7, dictionaries maintain insertion order. Dictionary comprehensions work like list comprehensions: squares = {x: x**2 for x in range(5)}. In interviews, common questions include: how to handle missing keys (using get() or defaultdict from collections), how to merge two dicts (use ** unpacking: {**dict1, **dict2}), and the difference between dict and OrderedDict (now largely the same since 3.7).'},
+
+  {k:['python class','object oriented','oop in python','inheritance','encapsulation'],
+   a:'Object-Oriented Programming in Python is built around classes and objects. A class is a blueprint; an object is an instance of that blueprint. Define a class: class Dog: def __init__(self, name, breed): self.name = name; self.breed = breed. The __init__ method is the constructor — it runs when you create an instance: my_dog = Dog("Rex", "Labrador"). Instance methods receive self as first parameter, which refers to the specific object. The four pillars of OOP are: Encapsulation (bundling data and methods, hiding internal state), Inheritance (a child class inherits from a parent: class Poodle(Dog)), Polymorphism (different classes can implement the same method differently), and Abstraction (hiding complexity behind simple interfaces). Python supports multiple inheritance. Special dunder methods like __str__, __len__, __eq__ let you customise how objects behave with built-in operations. In interviews, expect questions about when to use inheritance versus composition, and how Python handles method resolution order (MRO) in multiple inheritance.'},
+
+  {k:['try except','exception handling','python error','raise exception'],
+   a:'Exception handling in Python uses try/except/else/finally blocks. The try block contains code that might raise an error. The except block catches and handles specific exceptions: try: result = 10 / 0 except ZeroDivisionError: print("Cannot divide by zero"). You can catch multiple exceptions: except (TypeError, ValueError) or catch all with except Exception as e. The else block runs if no exception occurred — useful for code that should only run on success. The finally block always runs regardless — perfect for cleanup like closing files or database connections. You can raise your own exceptions with raise ValueError("Invalid input"). Custom exception classes inherit from Exception. Python has a rich hierarchy of built-in exceptions: ArithmeticError, IOError, KeyError, IndexError, and many more. In interviews, a key point is to always catch specific exceptions rather than bare except clauses — catching everything silently hides bugs. Also understand that exceptions in Python are not just for errors — they are used for flow control in some patterns, like StopIteration in iterators.'},
+
+  {k:['python list comprehension','comprehension','generator'],
+   a:'List comprehensions provide a concise, readable way to create lists: [expression for item in iterable if condition]. Example: evens = [x for x in range(20) if x % 2 == 0]. They are generally faster than equivalent for loops because they are optimised at the C level in CPython. Dictionary comprehensions: {k: v for k, v in pairs}. Set comprehensions: {x**2 for x in range(10)}. Generator expressions look like list comprehensions but use parentheses and are lazy — they compute values one at a time rather than building the whole list in memory: gen = (x**2 for x in range(1000000)) only computes each value when you ask for it. This makes generators memory-efficient for large datasets. The yield keyword turns a function into a generator function. In interviews, understanding the difference between list comprehensions (eager, returns list, uses memory) and generators (lazy, returns iterator, memory-efficient) is a frequently tested topic, especially for data engineering and backend roles.'},
+
+  // SQL
+  {k:['what is sql','sql database','database basics','relational database'],
+   a:'SQL (Structured Query Language) is the standard language for managing and querying relational databases. A relational database stores data in tables — rows and columns — and relationships between tables are defined by keys. The core SQL commands fall into categories: DML (Data Manipulation Language) includes SELECT, INSERT, UPDATE, DELETE — for working with data. DDL (Data Definition Language) includes CREATE, ALTER, DROP — for defining structure. DCL includes GRANT and REVOKE — for permissions. A SELECT statement: SELECT name, age FROM users WHERE age > 25 ORDER BY age DESC LIMIT 10. The WHERE clause filters rows, ORDER BY sorts results, LIMIT restricts how many rows are returned. Aggregation functions — COUNT(), SUM(), AVG(), MAX(), MIN() — work with GROUP BY to summarise data. In interviews, SQL is almost always tested with JOINs, subqueries, and window functions. Understanding indexes is crucial for performance questions — indexes speed up reads but slow down writes and take additional storage.'},
+
+  {k:['sql join','inner join','left join','right join','outer join'],
+   a:'SQL JOINs combine rows from two or more tables based on a related column. INNER JOIN returns only rows where the join condition matches in BOTH tables — the intersection. LEFT JOIN (or LEFT OUTER JOIN) returns ALL rows from the left table, and matching rows from the right — unmatched right rows become NULL. RIGHT JOIN is the mirror: all rows from the right, matched from the left. FULL OUTER JOIN returns all rows from both tables, with NULLs where there is no match. CROSS JOIN returns the Cartesian product — every combination of rows from both tables (rarely used, can be massive). SELF JOIN joins a table to itself — useful for hierarchical data like an employee-manager relationship. In interviews, the most common question is to distinguish LEFT JOIN from INNER JOIN and understand why a LEFT JOIN might return NULL values. Also be ready to write JOINs with multiple conditions and to JOIN more than two tables in one query.'},
+
+  {k:['sql group by','aggregate function','having clause','count sum avg'],
+   a:'GROUP BY groups rows that share a value in a specified column and allows aggregate functions to compute results per group. Example: SELECT department, COUNT(*) as headcount, AVG(salary) as avg_salary FROM employees GROUP BY department. This returns one row per department with the count and average salary. Aggregate functions: COUNT(*) counts all rows, COUNT(column) counts non-NULL values, SUM(), AVG(), MAX(), MIN(). The HAVING clause filters groups after aggregation — unlike WHERE which filters individual rows before grouping. Example: HAVING COUNT(*) > 5 returns only departments with more than 5 employees. Order of execution matters: FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT. In interviews, a common mistake candidates make is using WHERE instead of HAVING to filter aggregated results — this is frequently tested.'},
+
+  // JavaScript
+  {k:['what is javascript','javascript basics','js language'],
+   a:'JavaScript is a high-level, interpreted, dynamically-typed programming language originally created for web browsers in 1995. Today it runs both in browsers (client-side) and on servers via Node.js (server-side). JavaScript is single-threaded but handles asynchronous operations through an event loop — this is fundamental to understanding how it works. It supports multiple paradigms: prototype-based OOP, functional programming, and procedural. Key characteristics: dynamic typing (types are checked at runtime), first-class functions (functions are objects), closures (inner functions remember outer scope), and prototype chain (inheritance mechanism). The modern JavaScript ecosystem (ES6+) introduced arrow functions, classes, destructuring, spread/rest operators, promises, async/await, and modules. In interviews, the most frequently tested topics are: the difference between var/let/const, how the event loop works, closures, the this keyword (very tricky — its value depends on call context), and asynchronous programming with promises and async/await.'},
+
+  {k:['var let const','javascript variables','hoisting','scope'],
+   a:'JavaScript has three ways to declare variables, each with different scoping and behaviour. var is function-scoped and hoisted — the declaration is moved to the top of its function scope before execution (but not the assignment). This can cause confusing bugs. let is block-scoped (limited to the {} block it is declared in) and is not accessible before its declaration (temporal dead zone). const is also block-scoped but cannot be reassigned after initialisation — however, if it holds an object or array, the contents can still be mutated. Best practice: use const by default, let when you need to reassign, and avoid var entirely in modern code. Hoisting means: var declarations are hoisted and initialised as undefined, function declarations are fully hoisted, but let and const are hoisted without initialisation (accessing them before declaration throws a ReferenceError). In interviews, this is one of the most tested JavaScript fundamentals — expect questions about what a specific snippet of code outputs and why.'},
+
+  {k:['javascript promise','async await','asynchronous','callback','event loop'],
+   a:'JavaScript is single-threaded, meaning it executes one operation at a time. The event loop is what allows it to handle asynchronous operations without blocking. When an async operation (like a network request) is initiated, it is handed off to the browser/Node.js runtime. The callback is placed in a queue when the operation completes. The event loop continuously checks if the call stack is empty and if so, moves items from the queue to the stack. Callbacks were the original way to handle async code but lead to "callback hell" — deeply nested functions. Promises improved this: a Promise represents a future value — it is either pending, fulfilled, or rejected. Chain with .then() and catch errors with .catch(). Async/await is syntactic sugar over promises that makes async code look synchronous: async function fetchData() { try { const data = await fetch(url); } catch(e) {} }. The await keyword pauses execution of the async function until the promise resolves — but it does NOT block the thread. In interviews, be ready to explain the event loop visually, and to trace through code with setTimeout and promises to predict execution order.'},
+
+  // React
+  {k:['what is react','react js','react basics','react component'],
+   a:'React is a JavaScript library (not a framework) built by Facebook for building user interfaces, released in 2013. Its core concept is the component — a reusable, self-contained piece of UI that manages its own logic and rendering. React uses a virtual DOM: instead of directly manipulating the browser\'s DOM (which is slow), React maintains an in-memory representation. When state changes, React diffs the new virtual DOM against the previous one and applies only the minimal set of real DOM updates needed — this is why React is fast. Components can be class-based or functional. Since React hooks were introduced in 2019, functional components with hooks are the standard. Key hooks: useState manages local state, useEffect handles side effects (API calls, subscriptions, timers), useContext consumes context, useRef holds a mutable value that does not trigger re-renders, useMemo and useCallback optimise performance by memoising values and functions. Data flows one way: parent to child via props. For shared state, you lift state up to a common ancestor, or use Context API or external state managers like Redux or Zustand.'},
+
+  // Data structures
+  {k:['array vs list','data structure','time complexity','big o'],
+   a:'Data structures are ways to organise and store data so that operations can be performed efficiently. The choice of data structure directly determines the time and space complexity of your algorithms. Big O notation describes how performance scales with input size. O(1) is constant time — does not depend on input size (hash map lookup). O(log n) is logarithmic — binary search. O(n) is linear — scanning an array. O(n log n) is typical for efficient sorting. O(n²) is quadratic — nested loops, bubble sort. An array stores elements in contiguous memory with O(1) access by index but O(n) insertion/deletion at arbitrary positions. A linked list has O(1) insertion/deletion at known positions but O(n) access. A hash map (dictionary in Python) gives O(1) average case for lookup, insert, and delete. A binary search tree gives O(log n) average case for all operations. Stacks (LIFO) and queues (FIFO) are abstract data types typically implemented with arrays or linked lists. In interviews, every algorithm question implicitly requires you to reason about time and space complexity — always state your Big O analysis after writing code.'},
+
+  // System design
+  {k:['api','what is api','rest api','api design'],
+   a:'An API (Application Programming Interface) is a contract that defines how software components communicate. A REST API (Representational State Transfer) is the most common style for web APIs. It uses HTTP as the protocol and treats everything as a resource identified by a URL. The HTTP methods map to CRUD operations: GET (read), POST (create), PUT/PATCH (update), DELETE (remove). REST APIs should be stateless — each request contains all the information the server needs, with no stored session. Responses are typically JSON. Key design principles: use nouns for resources (not verbs): /users/123 is correct, /getUser/123 is wrong. Use appropriate HTTP status codes: 200 OK, 201 Created, 400 Bad Request, 401 Unauthorised, 403 Forbidden, 404 Not Found, 500 Internal Server Error. Versioning: /api/v1/users. Pagination: use limit and offset or cursor-based pagination for large datasets. In interviews for backend roles, you will be asked to design an API from scratch — always discuss authentication (JWT/OAuth), rate limiting, error handling, and pagination as part of your design.'},
+
+  // Math
+  {k:['derivative','calculus','differentiation','rate of change'],
+   a:'A derivative measures the instantaneous rate of change of a function with respect to its variable — essentially, how fast the output changes when the input changes by a tiny amount. If f(x) = x², then f\'(x) = 2x. This means at x = 3, the function is changing at a rate of 6 units per unit of x. Geometrically, the derivative at a point gives the slope of the tangent line to the curve at that point. Rules for differentiation: Power rule — d/dx[xⁿ] = nxⁿ⁻¹. Product rule for multiplied functions. Chain rule for composite functions: d/dx[f(g(x))] = f\'(g(x)) · g\'(x). Derivatives have practical applications everywhere: in physics, the derivative of position is velocity, and the derivative of velocity is acceleration. In machine learning, derivatives are the foundation of gradient descent — the optimisation algorithm that trains neural networks by following the direction of steepest descent of the loss function. In an exam or interview, always check: is the function differentiable at the point? (it must be continuous and smooth).'},
+
+  {k:['integral','integration','area under curve','antiderivative'],
+   a:'Integration is the reverse operation of differentiation — given the rate of change, find the original function. The indefinite integral of f(x) gives a family of functions F(x) + C, where C is the constant of integration. The definite integral ∫[a to b] f(x)dx gives the net signed area between the curve and the x-axis over the interval [a, b]. The Fundamental Theorem of Calculus connects differentiation and integration: the definite integral of f from a to b equals F(b) - F(a), where F is any antiderivative of f. Key integration rules: Power rule — ∫xⁿdx = xⁿ⁺¹/(n+1) + C. Integration by substitution (u-substitution) handles composite functions. Integration by parts handles products of functions. In applied fields: integration calculates area, volume, total accumulated change (like total distance from velocity), and probability (area under a probability density function). In machine learning, integration appears in computing expectations of probability distributions and in the calculation of certain loss functions.'},
+
+  {k:['probability','statistics','mean median mode','standard deviation'],
+   a:'Probability measures the likelihood of an event occurring, expressed as a number between 0 (impossible) and 1 (certain). P(event) = favourable outcomes / total possible outcomes. Key rules: P(A or B) = P(A) + P(B) - P(A and B). P(A and B) = P(A) × P(B) if A and B are independent. Conditional probability: P(A|B) = P(A and B) / P(B) — the probability of A given B has occurred. Bayes theorem: P(A|B) = P(B|A) × P(A) / P(B). Statistics describes and summarises data. Mean: average (sum divided by count) — sensitive to outliers. Median: middle value when sorted — robust to outliers. Mode: most frequent value. Standard deviation measures how spread out values are from the mean — a small SD means data is clustered, large SD means it is spread out. Variance is the square of standard deviation. Normal distribution (bell curve) is symmetric around the mean — 68% of data falls within 1 SD, 95% within 2 SDs. In interviews for data science and ML roles, probability and statistics are fundamental — expect questions on distributions, hypothesis testing, and Bayes theorem.'},
+
+  // Design
+  {k:['ui design','ux design','user interface','user experience','design principles'],
+   a:'UI (User Interface) design concerns the visual and interactive elements of a product — buttons, typography, colour, spacing, layout, and animations. UX (User Experience) design is the broader practice of ensuring the entire interaction between a user and a product is smooth, intuitive, and satisfying — it includes user research, information architecture, wireframing, usability testing, and the overall flow. The key design principles: Visual hierarchy (guide the eye to the most important elements first using size, contrast, and placement). Consistency (similar elements should look and behave similarly — users build mental models). Feedback (the system should always communicate its state — loading indicators, success messages, error states). Affordance (design elements should visually suggest how they are used — a button should look pressable). Accessibility (design for all users including those with visual, motor, or cognitive impairments — sufficient contrast, keyboard navigation, screen reader support). In interviews for product or UX roles, expect to walk through your design process: research → define the problem → ideate → prototype → test → iterate.'},
+
+  // Business
+  {k:['startup','business model','product market fit','mvp'],
+   a:'A startup is a newly founded company designed to grow rapidly by solving a significant problem for a large market. The term Product-Market Fit (PMF) describes the point at which your product satisfies a strong market demand — users love it, retention is high, and growth is organic. Before PMF, everything is about learning and validation. The MVP (Minimum Viable Product) is the simplest version of your product that delivers core value and allows you to learn from real users. Business models define how a company creates, delivers, and captures value. Common models: SaaS (subscription software), marketplace (take a cut of transactions), freemium (free tier + paid upgrade), advertising (free product, sell user attention), and direct sales. In early stages, focus relentlessly on a narrow target customer — trying to serve everyone at once leads to a product that serves no one well. Key metrics to track: CAC (Customer Acquisition Cost), LTV (Lifetime Value), churn rate (how many customers cancel), and MRR (Monthly Recurring Revenue) for SaaS businesses. The ratio LTV/CAC should be at least 3:1 for a healthy business.'},
+
+  // Interview skills
+  {k:['how to answer interview','interview tips','technical interview','behavioral interview'],
+   a:'Technical interviews test both your knowledge and your problem-solving process. For coding questions, always follow this structure: Clarify the problem before coding (ask about edge cases, input constraints, expected output format). Think out loud — interviewers value insight into your reasoning over just the final answer. Start with a brute-force approach and state its time/space complexity. Then optimise. Write clean, readable code with meaningful variable names. Test your solution with examples including edge cases. For system design interviews, think at scale from the start: consider load balancing, database choice (SQL vs NoSQL), caching, API design, and fault tolerance. For behavioural interviews, use the STAR format: Situation (context), Task (your responsibility), Action (what you specifically did), Result (measurable outcome). Prepare 5-6 strong stories that can flex to cover leadership, conflict, failure, success, and teamwork. The most common mistake is answering too vaguely — always be specific with names, numbers, and timelines.'},
+
+  {k:['what is machine learning','ml','neural network','deep learning','ai'],
+   a:'Machine learning is a subset of AI where systems learn from data rather than being explicitly programmed. Instead of writing rules, you provide examples and an algorithm discovers the patterns. The three main types: Supervised learning uses labelled data (input-output pairs) to train a model to predict outputs for new inputs — examples include classification (spam detection) and regression (house price prediction). Unsupervised learning finds hidden patterns in unlabelled data — clustering (customer segmentation) and dimensionality reduction. Reinforcement learning trains an agent to make decisions by rewarding good actions and penalising bad ones — used in game-playing AI and robotics. A neural network is inspired loosely by the brain — it consists of layers of nodes (neurons) connected by weights. The input layer receives data, hidden layers extract increasingly abstract features, and the output layer produces predictions. Deep learning uses neural networks with many hidden layers (deep networks) and requires large datasets and significant compute. Training adjusts weights via backpropagation and gradient descent to minimise a loss function. In interviews, know the difference between training error and test error, overfitting vs underfitting, and regularisation techniques.'},
+
+  {k:['git','github','version control','git commands','branch merge'],
+   a:'Git is a distributed version control system that tracks changes to files over time, allowing multiple developers to collaborate without overwriting each other\'s work. Every developer has a full copy of the entire repository history on their local machine. Key concepts: Repository (the project folder tracked by Git). Commit (a snapshot of changes with a message). Branch (an independent line of development). Merge (combining branches). The typical workflow: git init creates a new repo. git clone copies an existing repo. git status shows what has changed. git add . stages all changes. git commit -m "message" saves a snapshot. git push uploads to the remote (GitHub). git pull downloads remote changes. git branch name creates a branch. git checkout name switches to it. git merge name merges a branch into the current one. Git rebase rewrites commit history for a cleaner linear history — controversial but useful. Pull Requests (PRs) on GitHub are how teams review each other\'s code before merging. In interviews, understand how to resolve merge conflicts, the difference between merge and rebase, and common branching strategies like Git Flow or trunk-based development.'},
+
+  {k:['hello','hi','hey','good morning','good evening','greet'],
+   a:'Hello! I am your AI teaching assistant. I can give you detailed, interview-quality answers on any topic — Python, JavaScript, SQL, data structures, algorithms, system design, machine learning, mathematics, UX design, and business concepts. Just speak your question clearly and I will answer with full explanations, examples, and the kind of depth you need for technical interviews or deep learning. What would you like to explore?'},
+];
+
+// ─── MODAL / UTILS ───
+function showModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function showTeachModal(){showModal('teach-modal');}
+function showAuthModal(){showModal('auth-modal');}
+document.querySelectorAll('.overlay').forEach(function(o){
+  o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('show');});
+});
+function showToast(msg){
+  var e=document.querySelector('.toast');if(e)e.remove();
+  var t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);setTimeout(function(){t.remove();},3500);
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>.cr-video-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.cr-grid{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;padding:14px;overflow-y:auto;background:#0d0f12;align-content:start;}
+.cr-tile{position:relative;border-radius:12px;overflow:hidden;background:#1a1e25;border:1px solid rgba(255,255,255,.07);aspect-ratio:16/9;}
+.cr-tile video{width:100%;height:100%;object-fit:cover;}
+.cr-tile-label{position:absolute;bottom:8px;left:10px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:6px;}
+.cr-tile-teacher{border:2px solid #ff4d00;}
+.cam-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#1a1e25;}
+.cam-av{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;background:linear-gradient(135deg,#4f7cff,#7c5cff);color:#fff;}
+.cr-controls{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:#13161b;border-top:1px solid rgba(255,255,255,.07);flex-wrap:wrap;}
+.cr-btn{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.13);background:#1f232c;color:#fff;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .15s;position:relative;}
+.cr-btn:hover{background:#2a2f3d;}
+.cr-btn.off{background:rgba(255,79,106,.15);border-color:rgba(255,79,106,.3);color:#ff4f6a;}
+.cr-btn.red{background:#ff4f6a;border-color:#ff4f6a;width:52px;height:52px;}
+.cr-btn.red:hover{background:#e83057;}
+.cr-btn .tip{position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);background:#1f232c;border:1px solid rgba(255,255,255,.13);font-size:11px;padding:3px 8px;border-radius:5px;white-space:nowrap;color:#fff;opacity:0;pointer-events:none;transition:opacity .15s;font-family:var(--font);}
+.cr-btn:hover .tip{opacity:1;}
+.cr-chat{width:290px;border-left:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;background:#13161b;transition:width .25s ease;overflow:hidden;}
+.cr-chat.collapsed{width:0;}
+.cr-chat-head{padding:14px 16px 12px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#7a8099;border-bottom:1px solid rgba(255,255,255,.07);min-width:290px;}
+.cr-msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:290px;}
+.cr-msgs::-webkit-scrollbar{width:3px;}
+.cr-msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+.cr-msg{display:flex;flex-direction:column;gap:2px;}
+.cr-msg-name{font-size:11px;font-weight:600;color:#4f7cff;}
+.cr-msg-name.teacher{color:#ff4d00;}
+.cr-msg-text{font-size:13px;color:#eef0f4;background:#1f232c;padding:7px 11px;border-radius:0 9px 9px 9px;max-width:220px;word-break:break-word;line-height:1.45;}
+.cr-msg.sys .cr-msg-text{background:transparent;color:#7a8099;font-size:11px;text-align:center;max-width:100%;}
+.cr-input-wrap{padding:10px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:6px;min-width:290px;}
+.cr-input{flex:1;background:#1f232c;border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:8px 12px;color:#eef0f4;font-size:13px;font-family:var(--font);outline:none;}
+.cr-input:focus{border-color:#4f7cff;}
+.cr-input::placeholder{color:#7a8099;}
+.cr-send{width:33px;height:33px;background:#4f7cff;border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.cr-send:hover{background:#3d68ee;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* WHITEBOARD */
+.wb-panel{width:0;overflow:hidden;display:flex;flex-direction:column;background:#0a0c10;border-left:1px solid rgba(255,255,255,.07);transition:width .25s ease;}
+.wb-panel.open{width:340px;}
+.wb-head{padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;}
+.wb-head-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#7a8099;display:flex;align-items:center;gap:8px;}
+.wb-live-dot{width:6px;height:6px;border-radius:50%;background:#2ecc8a;animation:wbpulse 1.5s infinite;}
+.wb-live-dot.off{background:#555;animation:none;}
+@keyframes wbpulse{0%,100%{opacity:1}50%{opacity:.3}}
+.wb-captions{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:340px;}
+.wb-captions::-webkit-scrollbar{width:3px;}
+.wb-captions::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px;}
+.caption-block{display:flex;flex-direction:column;gap:3px;animation:fadeUp .2s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.caption-q-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#f5a623;}
+.caption-speaker{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px;}
+.caption-text{font-size:14px;line-height:1.55;color:#dde0e8;background:#13161b;padding:8px 12px;border-radius:0 10px 10px 10px;word-break:break-word;}
+.caption-text.interim{color:#7a8099;font-style:italic;background:transparent;padding:2px 12px;}
+.spk-0{color:#4f7cff;}.spk-1{color:#ff4d00;}.spk-2{color:#2ecc8a;}.spk-3{color:#f5a623;}.spk-4{color:#b44fff;}
+.caption-answer{margin-top:6px;background:#0f1a10;border-left:3px solid #2ecc8a;border-radius:0 8px 8px 0;padding:8px 12px;}
+.caption-answer-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#2ecc8a;margin-bottom:4px;}
+.caption-answer-text{font-size:13px;color:#b8f0c8;line-height:1.55;}
+.caption-answer-loading{color:#2ecc8a;font-style:italic;opacity:.7;}
+.wb-bottom{padding:10px 14px;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:8px;flex-shrink:0;min-width:340px;}
+.wb-toggle{flex:1;padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.13);background:#1f232c;color:#eef0f4;font-size:13px;font-family:var(--font);cursor:pointer;text-align:center;transition:all .15s;}
+.wb-toggle:hover{background:#2a2f3d;}
+.wb-toggle.active{background:#2ecc8a;border-color:#2ecc8a;color:#000;font-weight:600;}
+.wb-clear{padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#7a8099;font-size:12px;cursor:pointer;font-family:var(--font);transition:all .15s;}
+.wb-clear:hover{color:#ff4f6a;border-color:rgba(255,79,106,.3);}
+@media(max-width:640px){
+  nav{padding:0 16px;}
+  .hero{padding:48px 20px 40px;}
+  .search-section,.section{padding-left:20px;padding-right:20px;}
+  .cr-chat,.wb-panel{position:absolute;right:0;top:0;bottom:0;z-index:10;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo"><span class="logo-dot"></span>TeachLive</div>
+  <div class="nav-links">
+    <button class="nav-btn nav-btn-ghost" onclick="showTeachModal()">Teach a class</button>
+    <button class="nav-btn nav-btn-accent" onclick="showAuthModal()">Get Started</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">🎓 Live classes, real teachers</div>
+  <h1>Learn anything<br><span>live &amp; interactive</span></h1>
+  <p>Join live classes taught by real experts. Ask questions in real-time, connect with classmates, pay only for what you join.</p>
+  <div class="hero-btns">
+    <button class="btn-xl btn-dark" onclick="document.getElementById('search-input').focus()">Browse classes</button>
+    <button class="btn-xl btn-outline-dark" onclick="showTeachModal()">Start teaching →</button>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-section">
+  <div class="search-wrap">
+    <input type="text" id="search-input" placeholder="Search Python, Design, Math, Music…" oninput="filterClasses()">
+    <button class="search-btn" onclick="filterClasses()">Search</button>
+  </div>
+  <div class="filter-row">
+    <div class="filter-chip active" onclick="setFilter('all',this)">All</div>
+    <div class="filter-chip" onclick="setFilter('Programming',this)">Programming</div>
+    <div class="filter-chip" onclick="setFilter('Design',this)">Design</div>
+    <div class="filter-chip" onclick="setFilter('Math',this)">Math</div>
+    <div class="filter-chip" onclick="setFilter('Language',this)">Language</div>
+    <div class="filter-chip" onclick="setFilter('Music',this)">Music</div>
+    <div class="filter-chip" onclick="setFilter('Business',this)">Business</div>
+  </div>
+</div>
+
+<!-- CLASSES -->
+<div class="section">
+  <div class="section-head"><h2>Live &amp; Upcoming Classes</h2></div>
+  <div class="class-grid" id="class-grid"></div>
+</div>
+
+<!-- CREATE CLASS MODAL -->
+<div class="overlay" id="teach-modal">
+  <div class="modal">
+    <div class="modal-head"><h2>Create a Class</h2><button class="modal-close" onclick="closeModal('teach-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Your Name</label><input type="text" id="t-name" placeholder="e.g. Sarah Chen"></div>
+      <div class="form-group"><label>Class Title</label><input type="text" id="t-title" placeholder="e.g. Python for Beginners"></div>
+      <div class="form-group"><label>Category</label>
+        <select id="t-cat"><option>Programming</option><option>Design</option><option>Math</option><option>Language</option><option>Music</option><option>Business</option></select>
+      </div>
+      <div class="form-group"><label>Description</label><textarea id="t-desc" placeholder="What will students learn?"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>Price (USD)</label><input type="number" id="t-price" placeholder="15" min="1"></div>
+        <div class="form-group"><label>Max Students</label><input type="number" id="t-max" placeholder="5" min="1" max="5"></div>
+      </div>
+      <div class="form-group"><label>Emoji Icon</label><input type="text" id="t-emoji" placeholder="🐍" maxlength="2" style="font-size:24px;width:70px;"></div>
+      <button class="modal-btn modal-btn-dark" onclick="createClass()">Create &amp; Go Live</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAY MODAL -->
+<div class="overlay" id="pay-modal">
+  <div class="modal">
+    <div class="modal-head"><h2>Join Class</h2><button class="modal-close" onclick="closeModal('pay-modal')">✕</button></div>
+    <div class="modal-body">
+      <div style="background:var(--surface);border-radius:12px;padding:16px;margin-bottom:20px;display:flex;align-items:center;gap:14px;">
+        <div id="pay-class-emoji" style="font-size:36px;"></div>
+        <div>
+          <div id="pay-class-title" style="font-family:var(--display);font-size:16px;font-weight:700;"></div>
+          <div id="pay-class-teacher" style="font-size:13px;color:var(--ink2);margin-top:3px;"></div>
+        </div>
+      </div>
+      <div class="pay-amount" id="pay-amount-display">$0</div>
+      <div class="pay-sub">One-time payment · Join instantly after</div>
+      <div class="form-group"><label>Your Name</label><input type="text" id="s-name" placeholder="Enter your name"></div>
+      <div class="pay-card-preview">
+        <div style="font-size:11px;opacity:.6;letter-spacing:.1em;text-transform:uppercase;">Card Number</div>
+        <div class="card-num" id="card-num-display">•••• •••• •••• ••••</div>
+        <div class="card-row"><span>Card Holder</span><span>Expires</span></div>
+        <div class="card-row" style="margin-top:4px;opacity:1;font-size:14px;font-weight:500;"><span id="holder-preview">YOUR NAME</span><span id="exp-preview">MM/YY</span></div>
+      </div>
+      <div class="form-group"><label>Card Number</label><input type="text" id="cc-num" placeholder="4242 4242 4242 4242" maxlength="19" oninput="formatCard(this)"></div>
+      <div class="card-input-row">
+        <div class="form-group" style="margin-bottom:0"><label>Name on Card</label><input type="text" id="cc-name" placeholder="Full name" oninput="document.getElementById('holder-preview').textContent=this.value.toUpperCase()||'YOUR NAME'"></div>
+        <div class="form-group" style="margin-bottom:0"><label>Expiry</label><input type="text" id="cc-exp" placeholder="MM/YY" maxlength="5" oninput="document.getElementById('exp-preview').textContent=this.value||'MM/YY'"></div>
+        <div class="form-group" style="margin-bottom:0"><label>CVC</label><input type="text" id="cc-cvc" placeholder="123" maxlength="3"></div>
+      </div>
+      <button class="modal-btn modal-btn-accent" id="pay-btn" onclick="processPayment()" style="margin-top:20px;">Pay &amp; Join Class</button>
+      <div id="pay-status" style="text-align:center;font-size:13px;color:var(--ink3);margin-top:10px;min-height:18px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="overlay" id="auth-modal">
+  <div class="modal">
+    <div class="modal-head"><h2>Get Started</h2><button class="modal-close" onclick="closeModal('auth-modal')">✕</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <button class="modal-btn modal-btn-dark" onclick="closeModal('auth-modal');showTeachModal()">I want to Teach</button>
+        <button class="modal-btn modal-btn-accent" onclick="closeModal('auth-modal');showToast('Browse classes and click Join!')">I want to Learn</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLASSROOM -->
+<div id="classroom-screen">
+  <div class="cr-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="nav-logo" style="font-size:16px;"><span class="logo-dot"></span>TeachLive</div>
+      <span id="cr-title" class="cr-title"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="cr-badge">● LIVE</span>
+      <span id="cr-count" style="font-size:12px;color:#7a8099;"></span>
+    </div>
+  </div>
+  <div class="cr-main">
+    <div class="cr-video-area">
+      <div class="cr-grid" id="cr-grid"></div>
+      <div class="cr-controls">
+        <div class="cr-btn" id="cr-mic-btn" onclick="crToggleMic()">🎤<span class="tip">Mute</span></div>
+        <div class="cr-btn" id="cr-cam-btn" onclick="crToggleCam()">📷<span class="tip">Camera</span></div>
+        <div class="cr-btn red" onclick="crLeave()">📞<span class="tip">Leave</span></div>
+        <div class="cr-btn" onclick="crToggleChat()" style="position:relative;">
+          💬
+          <div id="cr-unread" style="position:absolute;top:-4px;right:-4px;background:#ff4f6a;color:#fff;font-size:9px;font-weight:700;width:15px;height:15px;border-radius:50%;display:none;align-items:center;justify-content:center;"></div>
+          <span class="tip">Chat</span>
+        </div>
+        <div class="cr-btn" onclick="crToggleWhiteboard()">📋<span class="tip">Q&amp;A Board</span></div>
+        <div id="cr-role-badge" style="font-size:12px;color:#7a8099;padding:0 8px;"></div>
+      </div>
+    </div>
+    <!-- CHAT SIDEBAR -->
+    <div class="cr-chat" id="cr-chat-panel">
+      <div class="cr-chat-head">Class Chat</div>
+      <div class="cr-msgs" id="cr-msgs"></div>
+      <div class="cr-input-wrap">
+        <input class="cr-input" id="cr-input" placeholder="Ask a question…" onkeydown="crChatKey(event)">
+        <button class="cr-send" onclick="crSend()">➤</button>
+      </div>
+    </div>
+    <!-- WHITEBOARD / Q&A SIDEBAR -->
+    <div class="wb-panel" id="wb-panel">
+      <div class="wb-head">
+        <div class="wb-head-title">
+          <span class="wb-live-dot off" id="wb-dot"></span>
+          Live Q&amp;A Board
+        </div>
+        <svg onclick="crToggleWhiteboard()" style="cursor:pointer;opacity:.5;width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </div>
+      <div class="wb-captions" id="wb-captions">
+        <div class="wb-placeholder" style="text-align:center;color:#555;font-size:13px;padding:40px 16px;line-height:1.7;">
+          Tap "Start Listening" below,<br>then speak your question.<br><br>
+          Your question will appear here<br>with an AI answer instantly.
+        </div>
+      </div>
+      <div class="wb-bottom">
+        <div class="wb-toggle" id="wb-btn" onclick="wbToggle()">🎙 Start Listening</div>
+        <button class="wb-clear" onclick="wbClear()">Clear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ───
+var MAX_ROOM = 5;
+var CLASSES = [
+  {id:'c1',title:'Python for Beginners',teacher:'Amara Osei',category:'Programming',emoji:'🐍',price:12,live:true},
+  {id:'c2',title:'UI/UX Fundamentals',teacher:'Priya Sharma',category:'Design',emoji:'🎨',price:18,live:true},
+  {id:'c3',title:'Calculus Made Simple',teacher:'James Okonkwo',category:'Math',emoji:'📐',price:10,live:false},
+  {id:'c4',title:'Spanish Conversation',teacher:'Maria Lopez',category:'Language',emoji:'🇪🇸',price:15,live:true},
+  {id:'c5',title:'Guitar Basics',teacher:'Kwame Asante',category:'Music',emoji:'🎸',price:20,live:false},
+  {id:'c6',title:'Startup Pitch Masterclass',teacher:'Jin Park',category:'Business',emoji:'🚀',price:25,live:true},
+];
+var activeFilter='all', pendingClass=null, myName='', isTeacher=false, classTitle='';
+
+// ─── BROWSE ───
+function bannerBg(c){
+  var m={Programming:'#e8f4e8',Design:'#f4e8f4',Math:'#e8eef4',Language:'#f4f0e8',Music:'#f4e8e8',Business:'#fff3e8'};
+  return m[c]||'#f0f0f0';
+}
+function renderClasses(list){
+  var g=document.getElementById('class-grid');
+  if(!list.length){g.innerHTML='<div style="color:var(--ink3);padding:32px 0;font-size:15px;">No classes found.</div>';return;}
+  g.innerHTML=list.map(function(c){
+    return '<div class="class-card" onclick="clickClass(\''+c.id+'\')">'+
+      '<div class="card-banner" style="background:'+bannerBg(c.category)+'"><span style="font-size:52px">'+c.emoji+'</span>'+
+      (c.live?'<div class="card-live-badge"><span class="card-live-dot"></span>LIVE NOW</div>':'<div class="card-scheduled-badge">UPCOMING</div>')+
+      '</div><div class="card-body">'+
+      '<div class="card-category">'+c.category+'</div>'+
+      '<div class="card-title">'+c.title+'</div>'+
+      '<div class="card-teacher"><div class="teacher-av">'+c.teacher.charAt(0)+'</div>'+c.teacher+'</div>'+
+      '<div class="card-footer"><div class="card-price">$'+c.price+'<span>/session</span></div>'+
+      '<button class="join-btn'+(c.live?' live':'')+'" onclick="event.stopPropagation();clickClass(\''+c.id+'\')">'+
+      (c.live?'Join Now':'Enroll')+'</button></div></div></div>';
+  }).join('');
+}
+function filterClasses(){
+  var q=document.getElementById('search-input').value.toLowerCase();
+  var list=CLASSES;
+  if(activeFilter!=='all') list=list.filter(function(c){return c.category===activeFilter;});
+  if(q) list=list.filter(function(c){return (c.title+c.teacher+c.category).toLowerCase().includes(q);});
+  renderClasses(list);
+}
+function setFilter(f,el){
+  activeFilter=f;
+  document.querySelectorAll('.filter-chip').forEach(function(c){c.classList.remove('active');});
+  el.classList.add('active');filterClasses();
+}
+renderClasses(CLASSES);
+
+// Auto-join from URL param
+(function(){
+  var r=new URLSearchParams(window.location.search).get('room');
+  if(!r) return;
+  var m=CLASSES.find(function(c){return c.id===r;});
+  setTimeout(function(){
+    if(m){clickClass(m.id);}
+    else{
+      pendingClass={id:r,title:'Live Class',teacher:'Host',emoji:'🎓',price:0};
+      document.getElementById('pay-class-emoji').textContent='🎓';
+      document.getElementById('pay-class-title').textContent='Live Class';
+      document.getElementById('pay-class-teacher').textContent='Room: '+r;
+      document.getElementById('pay-amount-display').textContent='Free';
+      document.getElementById('pay-btn').textContent='Join Class';
+      document.getElementById('pay-status').textContent='';
+      document.getElementById('s-name').value='';
+      showModal('pay-modal');
+    }
+  },300);
+})();
+
+// ─── CLICK / PAY ───
+function clickClass(id){
+  var c=CLASSES.find(function(x){return x.id===id;});if(!c)return;
+  pendingClass=c;
+  document.getElementById('pay-class-emoji').textContent=c.emoji;
+  document.getElementById('pay-class-title').textContent=c.title;
+  document.getElementById('pay-class-teacher').textContent='by '+c.teacher;
+  document.getElementById('pay-amount-display').textContent='$'+c.price;
+  document.getElementById('pay-btn').textContent='Pay $'+c.price+' & Join Class';
+  document.getElementById('pay-status').textContent='';
+  document.getElementById('s-name').value='';
+  showModal('pay-modal');
+}
+function formatCard(el){
+  var v=el.value.replace(/\D/g,'').slice(0,16);
+  el.value=v.replace(/(.{4})/g,'$1 ').trim();
+  document.getElementById('card-num-display').textContent=v.replace(/(.{4})/g,'$1 ').trim()||'•••• •••• •••• ••••';
+}
+function processPayment(){
+  var sName=document.getElementById('s-name').value.trim();
+  if(!sName){setPayStatus('Please enter your name');return;}
+  var isFree=!pendingClass.price;
+  if(!isFree){
+    if(document.getElementById('cc-num').value.replace(/\s/g,'').length<12){setPayStatus('Enter a valid card number');return;}
+    if(!document.getElementById('cc-exp').value){setPayStatus('Enter expiry date');return;}
+    if(!document.getElementById('cc-cvc').value){setPayStatus('Enter CVC');return;}
+  }
+  var btn=document.getElementById('pay-btn');
+  btn.innerHTML='<span class="spinner"></span> '+(isFree?'Joining…':'Processing…');
+  btn.disabled=true;setPayStatus('');
+  setTimeout(function(){
+    if(!isFree){btn.innerHTML='✓ Payment Successful!';btn.style.background='#00a878';}
+    setPayStatus('Entering classroom…');
+    setTimeout(function(){
+      closeModal('pay-modal');
+      btn.innerHTML=isFree?'Join Class':'Pay $'+pendingClass.price+' & Join Class';
+      btn.style.background='';btn.disabled=false;
+      myName=sName;isTeacher=false;classTitle=pendingClass.title;
+      enterClassroom();
+    },900);
+  },isFree?400:1800);
+}
+function setPayStatus(m){document.getElementById('pay-status').textContent=m;}
+
+// ─── CREATE CLASS ───
+function createClass(){
+  var name=document.getElementById('t-name').value.trim();
+  var title=document.getElementById('t-title').value.trim();
+  if(!name){showToast('Enter your name');return;}
+  if(!title){showToast('Enter a class title');return;}
+  var roomId=Math.random().toString(36).slice(2,8).toUpperCase();
+  var nc={id:roomId,title:title,teacher:name,category:document.getElementById('t-cat').value,
+    emoji:document.getElementById('t-emoji').value||'📚',
+    price:parseFloat(document.getElementById('t-price').value)||10,live:true};
+  CLASSES.unshift(nc);filterClasses();
+  closeModal('teach-modal');showToast('Class created! Going live…');
+  myName=name;isTeacher=true;classTitle=title;pendingClass=nc;
+  setTimeout(enterClassroom,600);
+}
+
+// ─── WEBRTC ───
+var myPeer=null,localStream=null,crMicOn=true,crCamOn=true,crChatOpen=true,crUnread=0;
+var crPeers={},hubPeer=null,hubConn=null,hubConns=[],roomCode='';
+var PCFG={debug:0,config:{iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:stun2.l.google.com:19302'},{urls:'stun:stun3.l.google.com:19302'}
+]}};
+function hid(c){return 'tl-hub-'+c.toLowerCase();}
+
+async function enterClassroom(){
+  roomCode=pendingClass.id;
+  var url=new URL(window.location.href);url.searchParams.set('room',roomCode);
+  window.history.replaceState({},'',url.toString());
+  document.getElementById('cr-title').textContent=classTitle;
+  document.getElementById('cr-count').textContent='1 participant';
+  document.getElementById('cr-role-badge').textContent=isTeacher?'🎓 Teacher':'👤 Student';
+  document.getElementById('classroom-screen').classList.add('show');
+  try{localStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640},height:{ideal:480},frameRate:{ideal:24}},audio:{echoCancellation:true,noiseSuppression:true}});}
+  catch(e){try{localStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});crCamOn=false;}
+  catch(e2){localStream=new MediaStream();crCamOn=false;crMicOn=false;crAddSys('No camera/mic available.');}}
+  localStream.getAudioTracks().forEach(function(t){t.enabled=crMicOn;});
+  localStream.getVideoTracks().forEach(function(t){t.enabled=crCamOn;});
+  renderLocalTile();
+  crAddSys('You joined "'+classTitle+'"');
+  crAddSys('Share: '+url.toString());
+  myPeer=new Peer(PCFG);
+  myPeer.on('error',function(e){if(e.type==='network')crAddSys('Network issue…');});
+  myPeer.on('open',function(){tryHub();});
+  myPeer.on('call',function(call){call.answer(localStream||new MediaStream());crHandleCall(call,call.peer);});
+  myPeer.on('connection',function(conn){crSetupIn(conn);});
+}
+
+function tryHub(){
+  hubPeer=new Peer(hid(roomCode),PCFG);
+  hubPeer.on('error',function(e){if(e.type==='unavailable-id'){hubPeer=null;joinHub();}});
+  hubPeer.on('open',function(){crAddSys('Room is live! Share the link.');hubListen();});
+}
+function hubListen(){
+  hubPeer.on('connection',function(conn){
+    conn.on('open',function(){
+      if(1+Object.keys(crPeers).length>=MAX_ROOM){conn.send({type:'full',max:MAX_ROOM});setTimeout(function(){conn.close();},500);return;}
+      conn.on('data',function(d){
+        if(d.type==='hello'){
+          var members=[{id:myPeer.id,name:myName,teacher:isTeacher}].concat(
+            Object.keys(crPeers).map(function(id){return{id:id,name:(crPeers[id]&&crPeers[id].name)||'Peer',teacher:!!(crPeers[id]&&crPeers[id].teacher)};}));
+          conn.send({type:'members',members:members});
+          hubConns.forEach(function(c){if(c.open)c.send({type:'new_member',id:conn.peer,name:d.name,teacher:d.teacher||false});});
+          crMesh(conn.peer,d.name,d.teacher||false);
+          hubConns.push(conn);
+        }
+        if(d.type==='left')propLeave(conn.peer);
+      });
+      conn.on('close',function(){propLeave(conn.peer);});
+    });
+  });
+}
+function propLeave(pid){
+  hubConns=hubConns.filter(function(c){return c.peer!==pid;});
+  hubConns.forEach(function(c){if(c.open)c.send({type:'member_left',id:pid});});
+  crOnLeft(pid);
+}
+function joinHub(){
+  hubConn=myPeer.connect(hid(roomCode),{reliable:true});
+  hubConn.on('error',function(){crAddSys('Could not reach room.');});
+  hubConn.on('open',function(){hubConn.send({type:'hello',name:myName,teacher:isTeacher});});
+  hubConn.on('data',function(d){
+    if(d.type==='full'){crLeave();showToast('Room full ('+d.max+'/'+d.max+'). Try later.');return;}
+    if(d.type==='members')d.members.forEach(function(m){if(m.id!==myPeer.id)crMesh(m.id,m.name,m.teacher);});
+    if(d.type==='new_member'&&d.id!==myPeer.id)crMesh(d.id,d.name,d.teacher);
+    if(d.type==='member_left')crOnLeft(d.id);
+  });
+  hubConn.on('close',function(){crAddSys('Host left. Room stays active for existing members.');});
+}
+function crMesh(pid,name,teacher){
+  if(crPeers[pid])return;
+  crPeers[pid]={name:name,teacher:teacher,call:null,conn:null,stream:null};
+  var conn=myPeer.connect(pid,{reliable:true});
+  crPeers[pid].conn=conn;
+  conn.on('open',function(){conn.send({type:'hi',name:myName,teacher:isTeacher});});
+  conn.on('data',function(d){crData(pid,d);});
+  conn.on('close',function(){crOnLeft(pid);});
+  setTimeout(function(){
+    if(!crPeers[pid]||!localStream)return;
+    var call=myPeer.call(pid,localStream);
+    if(call){crPeers[pid].call=call;crHandleCall(call,pid);}
+  },500);
+  crAddSys((name||'Someone')+(teacher?' 🎓':'')+' is connecting…');crUpdateCount();
+}
+function crHandleCall(call,pid){
+  if(!crPeers[pid])crPeers[pid]={name:'',teacher:false,call:null,conn:null,stream:null};
+  crPeers[pid].call=call;
+  call.on('stream',function(s){crPeers[pid].stream=s;crRenderRemote(pid,s);crUpdateCount();});
+  call.on('close',function(){crOnLeft(pid);});
+}
+function crSetupIn(conn){
+  var pid=conn.peer;
+  if(!crPeers[pid])crPeers[pid]={name:'',teacher:false,call:null,conn:null,stream:null};
+  if(!crPeers[pid].conn||!crPeers[pid].conn.open)crPeers[pid].conn=conn;
+  conn.on('data',function(d){crData(pid,d);});
+  conn.on('close',function(){crOnLeft(pid);});
+}
+function crData(pid,d){
+  if(d.type==='hi'&&crPeers[pid]){crPeers[pid].name=d.name;crPeers[pid].teacher=d.teacher;}
+  if(d.type==='chat')crReceiveChat(d.name,d.text,d.teacher);
+  if(d.type==='caption')wbReceive(pid,d.name,d.text);
+}
+function crOnLeft(pid){
+  if(!crPeers[pid])return;
+  var n=crPeers[pid].name||'Someone';
+  try{if(crPeers[pid].call)crPeers[pid].call.close();}catch(e){}
+  try{if(crPeers[pid].conn)crPeers[pid].conn.close();}catch(e){}
+  delete crPeers[pid];
+  var t=document.getElementById('crt-'+pid);if(t)t.remove();
+  crAddSys(n+' left');crUpdateCount();
+}
+
+// ─── TILES ───
+function renderLocalTile(){
+  var g=document.getElementById('cr-grid');
+  var tile=document.getElementById('crt-local');
+  if(!tile){tile=document.createElement('div');tile.className='cr-tile'+(isTeacher?' cr-tile-teacher':'');tile.id='crt-local';g.prepend(tile);}
+  tile.innerHTML='';
+  if(crCamOn&&localStream&&localStream.getVideoTracks().some(function(t){return t.readyState==='live';})){
+    var v=document.createElement('video');v.autoplay=true;v.muted=true;v.playsInline=true;v.setAttribute('playsinline','');
+    v.srcObject=localStream;v.onloadedmetadata=function(){v.play().catch(function(){});};tile.appendChild(v);
+  }else{tile.appendChild(mkPlaceholder(myName));}
+  var l=document.createElement('div');l.className='cr-tile-label';
+  l.textContent=myName+(isTeacher?' 🎓':' 👤')+' (You)'+(crMicOn?'':' 🔇');tile.appendChild(l);
+}
+function crRenderRemote(pid,stream){
+  var g=document.getElementById('cr-grid');
+  var tile=document.getElementById('crt-'+pid);
+  if(!tile){tile=document.createElement('div');tile.className='cr-tile'+(crPeers[pid]&&crPeers[pid].teacher?' cr-tile-teacher':'');tile.id='crt-'+pid;g.appendChild(tile);}
+  tile.innerHTML='';
+  var hasV=stream&&stream.getVideoTracks().length>0&&stream.getVideoTracks().some(function(t){return t.readyState==='live'&&t.enabled;});
+  if(hasV){
+    var v=document.createElement('video');v.autoplay=true;v.playsInline=true;v.setAttribute('playsinline','');v.muted=false;
+    v.srcObject=stream;v.onloadedmetadata=function(){v.play().catch(function(){});};tile.appendChild(v);
+  }else{tile.appendChild(mkPlaceholder((crPeers[pid]&&crPeers[pid].name)||'Peer'));}
+  if(!hasV&&stream&&stream.getAudioTracks().length>0){
+    var a=document.createElement('audio');a.autoplay=true;a.srcObject=stream;
+    a.onloadedmetadata=function(){a.play().catch(function(){});};tile.appendChild(a);
+  }
+  var l=document.createElement('div');l.className='cr-tile-label';
+  l.textContent=((crPeers[pid]&&crPeers[pid].name)||'Peer')+(crPeers[pid]&&crPeers[pid].teacher?' 🎓':'');tile.appendChild(l);
+}
+function mkPlaceholder(name){
+  var d=document.createElement('div');d.className='cam-placeholder';
+  var av=document.createElement('div');av.className='cam-av';av.textContent=(name||'?').charAt(0).toUpperCase();
+  d.appendChild(av);return d;
+}
+
+// ─── CONTROLS ───
+function crToggleMic(){
+  crMicOn=!crMicOn;if(localStream)localStream.getAudioTracks().forEach(function(t){t.enabled=crMicOn;});
+  var b=document.getElementById('cr-mic-btn');b.className='cr-btn'+(crMicOn?'':' off');
+  b.innerHTML=(crMicOn?'🎤':'🔇')+'<span class="tip">'+(crMicOn?'Mute':'Unmute')+'</span>';renderLocalTile();
+}
+function crToggleCam(){
+  crCamOn=!crCamOn;if(localStream)localStream.getVideoTracks().forEach(function(t){t.enabled=crCamOn;});
+  var b=document.getElementById('cr-cam-btn');b.className='cr-btn'+(crCamOn?'':' off');
+  b.innerHTML=(crCamOn?'📷':'🚫')+'<span class="tip">'+(crCamOn?'Cam off':'Cam on')+'</span>';renderLocalTile();
+}
+function crLeave(){
+  if(captionsOn)wbStop();
+  if(hubConn&&hubConn.open)try{hubConn.send({type:'left'});}catch(e){}
+  [hubConn,hubPeer,myPeer].forEach(function(x){if(x)try{x.close?x.close():x.destroy();}catch(e){}});
+  if(localStream)localStream.getTracks().forEach(function(t){t.stop();});
+  document.getElementById('classroom-screen').classList.remove('show');
+  document.getElementById('cr-grid').innerHTML='';
+  document.getElementById('cr-msgs').innerHTML='';
+  Object.keys(crPeers).forEach(function(k){delete crPeers[k];});
+  myPeer=null;localStream=null;hubPeer=null;hubConn=null;hubConns=[];
+  var url=new URL(window.location.href);url.searchParams.delete('room');window.history.replaceState({},'',url.toString());
+  showToast('Left the class');
+}
+function crToggleChat(){
+  crChatOpen=!crChatOpen;
+  document.getElementById('cr-chat-panel').classList.toggle('collapsed',!crChatOpen);
+  if(crChatOpen){crUnread=0;document.getElementById('cr-unread').style.display='none';}
+}
+function crToggleWhiteboard(){document.getElementById('wb-panel').classList.toggle('open');}
+function crChatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();crSend();}}
+function crSend(){
+  var i=document.getElementById('cr-input'),t=i.value.trim();if(!t)return;i.value='';
+  crAppendMsg(myName,t,isTeacher,true);
+  crBroadcast({type:'chat',name:myName,text:t,teacher:isTeacher});
+}
+function crReceiveChat(name,text,teacher){
+  crAppendMsg(name,text,teacher,false);
+  if(!crChatOpen){crUnread++;var b=document.getElementById('cr-unread');b.style.display='flex';b.textContent=crUnread>9?'9+':crUnread;}
+}
+function crAppendMsg(name,text,teacher){
+  var c=document.getElementById('cr-msgs'),d=document.createElement('div');d.className='cr-msg';
+  var nm=document.createElement('div');nm.className='cr-msg-name'+(teacher?' teacher':'');nm.textContent=name+(teacher?' (teacher)':'');
+  var tx=document.createElement('div');tx.className='cr-msg-text';tx.textContent=text;
+  d.append(nm,tx);c.appendChild(d);c.scrollTop=c.scrollHeight;
+}
+function crAddSys(text){
+  var c=document.getElementById('cr-msgs'),d=document.createElement('div');d.className='cr-msg sys';
+  var tx=document.createElement('div');tx.className='cr-msg-text';tx.textContent=text;
+  d.appendChild(tx);c.appendChild(d);c.scrollTop=c.scrollHeight;
+}
+function crBroadcast(data){Object.values(crPeers).forEach(function(p){if(p.conn&&p.conn.open)try{p.conn.send(data);}catch(e){}});}
+function crUpdateCount(){var n=1+Object.keys(crPeers).length;document.getElementById('cr-count').textContent=n+(n===1?' participant':' participants');}
+
+// ─── WHITEBOARD / LIVE Q&A ───
+// User speaks → question shown → AI answer generated below it → broadcast to all peers
+var captionsOn=false,recognition=null,recRestart=false,wbIntEl=null;
+var spkClr={},spkI=0;
+function wbClr(k){if(!(k in spkClr)){spkClr[k]=spkI++%5;}return 'spk-'+spkClr[k];}
+
+// MUST be synchronous onclick — Android Chrome blocks SR if called from async
+function wbToggle(){
+  if(captionsOn){wbStop();return;}
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){wbSys('Captions need Chrome or Edge browser. Firefox/Safari not supported.');return;}
+  captionsOn=true;recRestart=false;
+  document.getElementById('wb-dot').classList.remove('off');
+  var btn=document.getElementById('wb-btn');btn.textContent='⏹ Stop Listening';btn.classList.add('active');
+  // Open whiteboard automatically
+  document.getElementById('wb-panel').classList.add('open');
+  wbSys('Listening… speak your question now.');
+  wbLaunch(SR);
+}
+function wbLaunch(SR){
+  if(!captionsOn)return;
+  if(recognition)try{recognition.abort();}catch(e){}
+  recognition=new SR();
+  recognition.continuous=false;
+  recognition.interimResults=true;
+  recognition.lang='en-US';
+  recognition.onstart=function(){recRestart=false;};
+  recognition.onresult=function(e){
+    var interim='',final='';
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      var t=e.results[i][0].transcript;
+      if(e.results[i].isFinal)final+=t; else interim+=t;
+    }
+    if(interim)wbShowInterim(interim);
+    if(final.trim()){
+      wbClearInterim();
+      wbAddQA(myName,final.trim(),true);
+      crBroadcast({type:'caption',name:myName,text:final.trim()});
+    }
+  };
+  recognition.onerror=function(e){
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+      wbSys('Mic blocked. Go to Chrome Settings > Site Settings > Microphone > Allow this site.');
+      wbStop();
+    }
+  };
+  recognition.onend=function(){
+    wbClearInterim();
+    if(captionsOn&&!recRestart){
+      recRestart=true;
+      setTimeout(function(){if(captionsOn)wbLaunch(SR);},300);
+    }
+  };
+  try{recognition.start();}catch(err){setTimeout(function(){if(captionsOn)wbLaunch(SR);},600);}
+}
+function wbStop(){
+  captionsOn=false;recRestart=false;
+  if(recognition)try{recognition.abort();}catch(e){}
+  recognition=null;wbClearInterim();
+  document.getElementById('wb-dot').classList.add('off');
+  var btn=document.getElementById('wb-btn');btn.textContent='🎙 Start Listening';btn.classList.remove('active');
+  wbSys('Stopped.');
+}
+function wbShowInterim(text){
+  var c=document.getElementById('wb-captions');
+  if(!wbIntEl){
+    wbIntEl=document.createElement('div');wbIntEl.id='wb-int';wbIntEl.className='caption-block';
+    wbIntEl.innerHTML='<div class="caption-speaker '+wbClr('__me__')+'">'+esc(myName)+'</div><div class="caption-text interim" id="wb-int-txt"></div>';
+    c.appendChild(wbIntEl);
+  }
+  var t=document.getElementById('wb-int-txt');if(t)t.textContent=text+'…';
+  c.scrollTop=c.scrollHeight;
+}
+function wbClearInterim(){if(wbIntEl){wbIntEl.remove();wbIntEl=null;}}
+
+// Add a Q+A block with AI answer
+function wbAddQA(name,question,isMe){
+  var c=document.getElementById('wb-captions');
+  var ph=c.querySelector('.wb-placeholder');if(ph)ph.remove();
+  var aid='ans-'+Date.now()+'-'+Math.random().toString(36).slice(2,5);
+  var spkKey=isMe?'__me__':name;
+  var block=document.createElement('div');block.className='caption-block';
+  block.innerHTML=
+    '<div class="caption-q-label">Question</div>'+
+    '<div class="caption-speaker '+wbClr(spkKey)+'">'+esc(name)+'</div>'+
+    '<div class="caption-text">'+esc(question)+'</div>'+
+    '<div class="caption-answer" id="'+aid+'">'+
+      '<div class="caption-answer-label">AI Answer</div>'+
+      '<div class="caption-answer-text caption-answer-loading">Thinking…</div>'+
+    '</div>';
+  c.appendChild(block);c.scrollTop=c.scrollHeight;
+  setTimeout(function(){
+    var el=document.getElementById(aid);if(!el)return;
+    var ans=wbAnswer(question);
+    el.querySelector('.caption-answer-text').textContent=ans;
+    el.querySelector('.caption-answer-text').classList.remove('caption-answer-loading');
+    c.scrollTop=c.scrollHeight;
+  },800);
+}
+function wbReceive(pid,name,text){wbAddQA(name,text,false);}
+function wbSys(text){
+  var c=document.getElementById('wb-captions');
+  var ph=c.querySelector('.wb-placeholder');if(ph)ph.remove();
+  var el=document.createElement('div');el.className='caption-block';
+  el.innerHTML='<div class="caption-text" style="color:#7a8099;font-size:12px;background:transparent;padding:4px 0;">'+esc(text)+'</div>';
+  c.appendChild(el);c.scrollTop=c.scrollHeight;
+}
+function wbClear(){
+  document.getElementById('wb-captions').innerHTML='<div class="wb-placeholder" style="text-align:center;color:#555;font-size:13px;padding:40px 16px;">Board cleared.</div>';
+  wbIntEl=null;
+}
+
+// ─── AI ANSWER ENGINE ───
 var KB=[
   {k:['what is python','about python','python language'],a:'Python is a beginner-friendly programming language used for web development, data science, AI, and automation. It has simple English-like syntax, making it one of the easiest languages to learn.'},
   {k:['python variable','variables in python'],a:'A variable stores data. In Python: name = "Alice" or age = 25. You don\'t need to declare a type — Python figures it out automatically.'},
