@@ -352,7 +352,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
         <button class="wb-clear" onclick="wbClearHistory();wbClear()">Clear</button>
       </div>
       <div class="apikey-bar">
-        <input class="apikey-input" id="apikey-input" type="password" placeholder="Paste Claude API key here…" onkeydown="if(event.key==='Enter')saveApiKey()">
+        <input class="apikey-input" id="apikey-input" type="password" placeholder="Paste Gemini API key (AIza...)…" onkeydown="if(event.key==='Enter')saveApiKey()">
         <button class="apikey-save" onclick="saveApiKey()">Save</button>
       </div>
       <div class="apikey-status" id="apikey-status"></div>
@@ -802,70 +802,83 @@ function wbClear(){
   wbIntEl=null;
 }
 
-// ─── CLAUDE AI ANSWER ENGINE ───
-// Sends spoken question to Claude API and streams the answer back.
-// Context-aware: last 6 messages are sent so follow-ups work naturally.
-// API key is entered once by the user in the settings field.
+// ─── GEMINI AI ANSWER ENGINE ───
+// Sends spoken question to Google Gemini API and streams the answer back.
+// Context-aware: keeps last 6 turns so follow-up questions work naturally.
+// Uses gemini-2.0-flash — fast, free tier available, great quality.
 
-var CLAUDE_API_KEY = '';
-var wbHistory = [];   // [{role:'user',content:'...'},{role:'assistant',content:'...'}]
-var MAX_HISTORY = 6;  // keep last 6 turns for context
+var GEMINI_API_KEY = '';
+var wbHistory = [];  // [{role:'user',parts:[{text:'...'}]},{role:'model',parts:[{text:'...'}]}]
+var MAX_HISTORY = 6;
 
-var SYSTEM_PROMPT = 'You are an expert teaching assistant inside a live video classroom. ' +
+var GEMINI_SYSTEM = 'You are an expert teaching assistant inside a live video classroom. ' +
   'When a student or teacher asks a question, give a clear, detailed, interview-quality answer. ' +
-  'Structure your answers like a great teacher: explain the concept, give a real example, mention trade-offs or common mistakes. ' +
-  'Keep answers focused but thorough — 3 to 6 sentences minimum. ' +
-  'If the question is a follow-up, continue naturally from the previous answer. ' +
-  'Use plain text only, no markdown, no bullet symbols, no asterisks.';
+  'Structure your answer like a great teacher: explain the concept, give a real-world example, mention trade-offs or common mistakes. ' +
+  'Keep answers thorough but focused — minimum 4 sentences. ' +
+  'If the question is a follow-up to a previous answer, continue naturally from that context. ' +
+  'Use plain text only — no markdown symbols, no asterisks, no bullet points.';
 
 async function wbAnswer(question, answerId, container) {
   var el = document.getElementById(answerId);
   if (!el) return;
   var textEl = el.querySelector('.caption-answer-text');
 
-  // Check API key
-  if (!CLAUDE_API_KEY) {
-    textEl.textContent = 'No API key set. Tap the key icon in the classroom controls to add your Claude API key.';
+  if (!GEMINI_API_KEY) {
+    textEl.textContent = 'No API key set. Paste your Gemini API key in the field below the Q&A board.';
     textEl.classList.remove('caption-answer-loading');
     return;
   }
 
-  // Add user question to history
-  wbHistory.push({ role: 'user', content: question });
-  if (wbHistory.length > MAX_HISTORY) wbHistory = wbHistory.slice(-MAX_HISTORY);
-
-  // Show streaming indicator
   textEl.textContent = '';
   textEl.classList.remove('caption-answer-loading');
 
+  // Add user message to history
+  wbHistory.push({ role: 'user', parts: [{ text: question }] });
+  if (wbHistory.length > MAX_HISTORY) wbHistory = wbHistory.slice(-MAX_HISTORY);
+
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_API_KEY;
+
+  var body = {
+    system_instruction: { parts: [{ text: GEMINI_SYSTEM }] },
+    contents: wbHistory.slice(),
+    generationConfig: {
+      maxOutputTokens: 400,
+      temperature: 0.7
+    }
+  };
+
   try {
-    var response = await fetch('https://api.anthropic.com/v1/messages', {
+    var response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CLAUDE_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 400,
-        system: SYSTEM_PROMPT,
-        messages: wbHistory.slice()
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
     });
 
     if (!response.ok) {
       var err = await response.json().catch(function(){ return {}; });
-      var msg = (err.error && err.error.message) || ('API error: ' + response.status);
+      var msg = (err.error && err.error.message) || ('Gemini API error: ' + response.status);
       textEl.textContent = msg;
       return;
     }
 
     var data = await response.json();
-    var answer = (data.content && data.content[0] && data.content[0].text) || 'No response received.';
+    var answer = '';
 
-    // Typewriter effect — streams the answer character by character
+    try {
+      answer = data.candidates[0].content.parts[0].text || 'No response received.';
+    } catch(e) {
+      answer = 'Could not parse Gemini response. Please try again.';
+    }
+
+    // Clean up any markdown symbols Gemini sometimes adds
+    answer = answer
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/^#+\s/gm, '')
+      .replace(/`/g, '')
+      .trim();
+
+    // Typewriter effect
     textEl.textContent = '';
     var i = 0;
     function typeNext() {
@@ -873,36 +886,37 @@ async function wbAnswer(question, answerId, container) {
         textEl.textContent += answer[i];
         i++;
         container.scrollTop = container.scrollHeight;
-        setTimeout(typeNext, 12);
+        setTimeout(typeNext, 10);
       } else {
-        // Add assistant reply to history for context
-        wbHistory.push({ role: 'assistant', content: answer });
+        // Save assistant reply to history
+        wbHistory.push({ role: 'model', parts: [{ text: answer }] });
         if (wbHistory.length > MAX_HISTORY) wbHistory = wbHistory.slice(-MAX_HISTORY);
       }
     }
     typeNext();
 
   } catch (err) {
-    textEl.textContent = 'Connection error: ' + err.message + '. Check your API key and internet connection.';
+    textEl.textContent = 'Connection error: ' + err.message + '. Check your API key and internet.';
   }
 }
 
 function wbClearHistory() {
   wbHistory = [];
-  wbSys('Conversation context cleared.');
+  wbSys('Conversation cleared — starting fresh.');
 }
+
 
 // ─── API KEY ───
 function saveApiKey() {
   var key = document.getElementById('apikey-input').value.trim();
-  if (!key) { document.getElementById('apikey-status').textContent = 'Please paste your API key.'; return; }
-  if (!key.startsWith('sk-ant-')) {
-    document.getElementById('apikey-status').textContent = 'Key should start with sk-ant-... Check and try again.';
+  if (!key) { document.getElementById('apikey-status').textContent = 'Please paste your Gemini API key.'; return; }
+  if (!key.startsWith('AIza')) {
+    document.getElementById('apikey-status').textContent = 'Gemini keys start with AIza... Check and try again.';
     return;
   }
-  CLAUDE_API_KEY = key;
+  GEMINI_API_KEY = key;
   document.getElementById('apikey-input').value = '';
-  document.getElementById('apikey-status').textContent = '✓ Key saved. Start listening to ask questions!';
+  document.getElementById('apikey-status').textContent = '✓ Gemini key saved! Start listening to ask questions.';
   setTimeout(function(){ document.getElementById('apikey-status').textContent = ''; }, 4000);
 }
 
