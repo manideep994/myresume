@@ -805,7 +805,138 @@ function wbClear(){
 // ─── GEMINI AI ANSWER ENGINE ───
 // Sends spoken question to Google Gemini API and streams the answer back.
 // Context-aware: keeps last 6 turns so follow-up questions work naturally.
-// Uses gemini-2.0-flash — fast, free tier available, great quality.
+// Uses gemini-1.5-flash — fast, free tier available, great quality.
+
+var GEMINI_API_KEY = '';
+var wbHistory = [];  // [{role:'user',parts:[{text:'...'}]},{role:'model',parts:[{text:'...'}]}]
+var MAX_HISTORY = 6;
+
+var GEMINI_SYSTEM = 'You are an expert teaching assistant inside a live video classroom. ' +
+  'When a student or teacher asks a question, give a clear, detailed, interview-quality answer. ' +
+  'Structure your answer like a great teacher: explain the concept, give a real-world example, mention trade-offs or common mistakes. ' +
+  'Keep answers thorough but focused — minimum 4 sentences. ' +
+  'If the question is a follow-up to a previous answer, continue naturally from that context. ' +
+  'Use plain text only — no markdown symbols, no asterisks, no bullet points.';
+
+async function wbAnswer(question, answerId, container) {
+  var el = document.getElementById(answerId);
+  if (!el) return;
+  var textEl = el.querySelector('.caption-answer-text');
+
+  if (!GEMINI_API_KEY) {
+    textEl.textContent = 'No API key set. Paste your Gemini API key in the field below the Q&A board.';
+    textEl.classList.remove('caption-answer-loading');
+    return;
+  }
+
+  textEl.textContent = '';
+  textEl.classList.remove('caption-answer-loading');
+
+  // Add user message to history
+  wbHistory.push({ role: 'user', parts: [{ text: question }] });
+  if (wbHistory.length > MAX_HISTORY) wbHistory = wbHistory.slice(-MAX_HISTORY);
+
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY;
+
+  var body = {
+    system_instruction: { parts: [{ text: GEMINI_SYSTEM }] },
+    contents: wbHistory.slice(),
+    generationConfig: {
+      maxOutputTokens: 400,
+      temperature: 0.7
+    }
+  };
+
+  try {
+    var response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      var err = await response.json().catch(function(){ return {}; });
+      var msg = (err.error && err.error.message) || ('Gemini API error: ' + response.status);
+      textEl.textContent = msg;
+      return;
+    }
+
+    var data = await response.json();
+    var answer = '';
+
+    try {
+      answer = data.candidates[0].content.parts[0].text || 'No response received.';
+    } catch(e) {
+      answer = 'Could not parse Gemini response. Please try again.';
+    }
+
+    // Clean up any markdown symbols Gemini sometimes adds
+    answer = answer
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/^#+\s/gm, '')
+      .replace(/`/g, '')
+      .trim();
+
+    // Typewriter effect
+    textEl.textContent = '';
+    var i = 0;
+    function typeNext() {
+      if (i < answer.length) {
+        textEl.textContent += answer[i];
+        i++;
+        container.scrollTop = container.scrollHeight;
+        setTimeout(typeNext, 10);
+      } else {
+        // Save assistant reply to history
+        wbHistory.push({ role: 'model', parts: [{ text: answer }] });
+        if (wbHistory.length > MAX_HISTORY) wbHistory = wbHistory.slice(-MAX_HISTORY);
+      }
+    }
+    typeNext();
+
+  } catch (err) {
+    textEl.textContent = 'Connection error: ' + err.message + '. Check your API key and internet.';
+  }
+}
+
+function wbClearHistory() {
+  wbHistory = [];
+  wbSys('Conversation cleared — starting fresh.');
+}
+
+
+// ─── API KEY ───
+function saveApiKey() {
+  var key = document.getElementById('apikey-input').value.trim();
+  if (!key) { document.getElementById('apikey-status').textContent = 'Please paste your Gemini API key.'; return; }
+  if (!key.startsWith('AIza')) {
+    document.getElementById('apikey-status').textContent = 'Gemini keys start with AIza... Check and try again.';
+    return;
+  }
+  GEMINI_API_KEY = key;
+  document.getElementById('apikey-input').value = '';
+  document.getElementById('apikey-status').textContent = '✓ Gemini key saved! Start listening to ask questions.';
+  setTimeout(function(){ document.getElementById('apikey-status').textContent = ''; }, 4000);
+}
+
+// ─── MODAL / UTILS ───
+function showModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function showTeachModal(){showModal('teach-modal');}
+function showAuthModal(){showModal('auth-modal');}
+document.querySelectorAll('.overlay').forEach(function(o){
+  o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('show');});
+});
+function showToast(msg){
+  var e=document.querySelector('.toast');if(e)e.remove();
+  var t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);setTimeout(function(){t.remove();},3500);
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>// Uses gemini-2.0-flash — fast, free tier available, great quality.
 
 var GEMINI_API_KEY = '';
 var wbHistory = [];  // [{role:'user',parts:[{text:'...'}]},{role:'model',parts:[{text:'...'}]}]
