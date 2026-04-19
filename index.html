@@ -629,6 +629,1074 @@ const PEER_CONFIG = {
 async function enterClassroom() {
   roomCode = pendingClass.id;
 
+  const url = new URL(window.location.href);
+  url.searchParams.set('room', roomCode);
+  window.history.replaceState({}, '', url.toString());
+
+  document.getElementById('cr-title').textContent = classTitle;
+  document.getElementById('cr-count').textContent = '1 participant';
+  document.getElementById('cr-role-badge').textContent = isTeacher ? '🎓 Teacher' : '👤 Student';
+  document.getElementById('classroom-screen').classList.add('show');
+
+  // FIX: Get media with proper constraints for quality + compatibility.
+  // echoCancellation prevents feedback loops. Lower resolution = less bandwidth strain.
+  // We get media BEFORE creating the Peer so localStream is always ready
+  // when any incoming call fires — avoids answering with an undefined stream.
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24 } },
+      audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 }
+    });
+  } catch(e) {
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true }
+      });
+      crCamOn = false;
+    } catch(e2) {
+      localStream = new MediaStream();
+      crCamOn = false; crMicOn = false;
+      crAddSys('⚠️ No camera/mic found — joining without media.');
+    }
+  }
+
+  // Apply initial enabled state to tracks so mute/cam state is consistent from the start
+  localStream.getAudioTracks().forEach(t => { t.enabled = crMicOn; });
+  localStream.getVideoTracks().forEach(t => { t.enabled = crCamOn; });
+
+  renderLocalTile();
+  crAddSys('You joined "' + classTitle + '"');
+  crAddSys('Share link: ' + url.toString());
+
+  myPeer = new Peer(PEER_CONFIG);
+
+  myPeer.on('error', e => {
+    console.warn('PeerJS error:', e.type, e);
+    if (e.type === 'network') crAddSys('Network issue detected…');
+  });
+
+  myPeer.on('open', id => {
+    console.log('My peer ID:', id);
+    // FIX: Now that we have our own ID, race to claim the hub.
+    // We pass our ID into the hub logic so it can include us in member lists.
+    tryClaimHub();
+  });
+
+  // Answer any incoming video call immediately with our stream.
+  // FIX: localStream is guaranteed to exist here because we await getUserMedia
+  // before creating myPeer, so no race condition.
+  myPeer.on('call', call => {
+    console.log('Incoming call from', call.peer, '— answering with', localStream?.getTracks().length, 'tracks');
+    if (!localStream) {
+      console.warn('localStream not ready — answering with empty stream');
+      call.answer(new MediaStream());
+    } else {
+      call.answer(localStream);
+    }
+    crHandleCall(call, call.peer);
+  });
+
+  // Accept any incoming data connection (chat / metadata)
+  myPeer.on('connection', conn => {
+    console.log('Incoming data conn from', conn.peer);
+    crSetupIncomingConn(conn);
+  });
+}
+
+// CLAIM HUB — every peer tries this on enter.
+// First peer gets the hub ID. Everyone else gets 'unavailable-id' and falls to joinHub().
+// The hub is ONLY a directory — it never relays video, just member lists.
+function tryClaimHub() {
+  hubPeer = new Peer(hubId(roomCode), PEER_CONFIG);
+
+  hubPeer.on('error', e => {
+    if (e.type === 'unavailable-id') {
+      // Someone else is already hub — join as a regular member
+      console.log('Hub taken — joining as member');
+      hubPeer = null;
+      joinHub();
+    } else {
+      console.warn('Hub error:', e.type);
+    }
+  });
+
+  hubPeer.on('open', () => {
+    console.log('I am the hub:', hubId(roomCode));
+    crAddSys('Room is live! Share the link to invite others.');
+    listenAsHub();
+  });
+}
+
+// HUB LOGIC — only runs on whoever claimed the hub peer ID.
+// When someone connects and sends 'hello':
+//   1. Check room isn't full
+//   2. Send them the FULL member list including the hub's OWN myPeer.id
+//   3. Tell all current members about the newcomer
+//   4. Connect to the newcomer ourselves (hub is just another mesh peer)
+function listenAsHub() {
+  hubPeer.on('connection', conn => {
+    // FIX: Check full BEFORE conn.on('open') fires so we can reject early
+    conn.on('open', () => {
+      // Room size = us (hub) + everyone we're already connected to + this new person
+      const currentSize = 1 + Object.keys(crPeers).length;
+      if (currentSize >= MAX_ROOM_SIZE) {
+        conn.send({ type: 'full', max: MAX_ROOM_SIZE });
+        setTimeout(() => conn.close(), 500); // give the message time to arrive
+        return;
+      }
+
+      conn.on('data', data => {
+        if (data.type === 'hello') {
+          const joinerId   = conn.peer;
+          const joinerName = data.name;
+          const joinerRole = data.teacher || false;
+
+          // FIX: Build member list from current crPeers PLUS ourselves.
+          // myPeer.id is our real random peer ID — this is what the joiner
+          // needs to call/connect to us directly. Without this the joiner
+          // only sees themselves (1 participant).
+          const memberList = [
+            { id: myPeer.id, name: myName, teacher: isTeacher }, // <-- the hub's own peer ID
+            ...Object.keys(crPeers).map(id => ({
+              id,
+              name:    crPeers[id]?.name    || 'Peer',
+              teacher: crPeers[id]?.teacher || false
+            }))
+          ];
+          conn.send({ type: 'members', members: memberList });
+
+          // Tell every existing member to connect to the newcomer directly
+          hubConns.forEach(c => {
+            if (c.open) c.send({ type: 'new_member', id: joinerId, name: joinerName, teacher: joinerRole });
+          });
+
+          // FIX: Hub (us) must ALSO connect directly to the joiner — we're a mesh peer too
+          crMeshConnect(joinerId, joinerName, joinerRole);
+
+          hubConns.push(conn);
+        }
+
+        if (data.type === 'left') {
+          propagateLeave(conn.peer);
+        }
+      });
+
+      conn.on('close', () => propagateLeave(conn.peer));
+    });
+  });
+}
+
+// Tell everyone in the room that a peer left, and clean up locally
+function propagateLeave(peerId) {
+  hubConns = hubConns.filter(c => c.peer !== peerId);
+  hubConns.forEach(c => { if (c.open) c.send({ type: 'member_left', id: peerId }); });
+  crOnLeft(peerId);
+}
+
+// JOIN HUB — for every peer that isn't the hub.
+// Sends 'hello', gets back a 'members' list, then connects directly to each one.
+function joinHub() {
+  hubConn = myPeer.connect(hubId(roomCode), { reliable: true });
+
+  hubConn.on('error', e => {
+    crAddSys('Could not reach room — check the link and try again.');
+    console.error('Hub conn error:', e);
+  });
+
+  hubConn.on('open', () => {
+    // FIX: Send our real peer ID alongside name so the hub knows who we are.
+    // (conn.peer on the hub side gives them our ID, but being explicit helps debugging)
+    hubConn.send({ type: 'hello', name: myName, teacher: isTeacher, id: myPeer.id });
+  });
+
+  hubConn.on('data', data => {
+    if (data.type === 'full') {
+      crLeave();
+      showToast('Room is full (' + data.max + '/' + data.max + '). Try again later.');
+      return;
+    }
+
+    if (data.type === 'members') {
+      // FIX: members list now always includes the hub's own myPeer.id.
+      // Connect to EVERY person in the list except ourselves.
+      console.log('Got members list:', data.members);
+      data.members.forEach(m => {
+        if (m.id !== myPeer.id) crMeshConnect(m.id, m.name, m.teacher);
+      });
+    }
+
+    if (data.type === 'new_member') {
+      // Someone joined after us — connect to them directly
+      if (data.id !== myPeer.id) crMeshConnect(data.id, data.name, data.teacher);
+    }
+
+    if (data.type === 'member_left') {
+      crOnLeft(data.id);
+    }
+  });
+
+  hubConn.on('close', () => {
+    // Hub left — existing mesh connections survive, only new joiners are affected
+    crAddSys('Host disconnected. Existing connections remain active.');
+  });
+}
+
+// MESH CONNECT — open a direct data channel + video call to a specific peer.
+// Called by both hub-side (when new joiner arrives) and joiners (from member list).
+function crMeshConnect(peerId, name, teacher) {
+  if (crPeers[peerId]) {
+    console.log('Already have peer', peerId, '— skipping');
+    return;
+  }
+
+  console.log('Connecting to peer:', peerId, name);
+  crPeers[peerId] = { name, teacher, call: null, conn: null, stream: null };
+
+  // Data channel for chat + name/role metadata
+  const conn = myPeer.connect(peerId, { reliable: true });
+  crPeers[peerId].conn = conn;
+
+  conn.on('open', () => {
+    conn.send({ type: 'hi', name: myName, teacher: isTeacher });
+  });
+  conn.on('data', d => crHandleData(peerId, d));
+  conn.on('close', () => crOnLeft(peerId));
+  conn.on('error', e => console.warn('Conn error with', peerId, e));
+
+  // FIX: Small delay before calling — gives the remote peer time to
+  // set up their myPeer.on('call') listener after receiving new_member/members.
+  // Without this, the call can arrive before the other side is listening,
+  // especially on slower connections, causing the stream event to never fire.
+  setTimeout(() => {
+    // Guard: peer might have left in the tiny window before the call
+    if (!crPeers[peerId] || !localStream) return;
+
+    console.log('Calling peer:', peerId, 'stream tracks:', localStream.getTracks().length);
+    const call = myPeer.call(peerId, localStream);
+    if (call) {
+      crPeers[peerId].call = call;
+      crHandleCall(call, peerId);
+    } else {
+      console.warn('myPeer.call returned null for', peerId);
+    }
+  }, 500);
+
+  crAddSys((name || 'Someone') + (teacher ? ' 🎓' : '') + ' is connecting…');
+  crUpdateCount();
+}
+
+// Handle a video call — outgoing (from crMeshConnect) or incoming (from myPeer.on('call'))
+function crHandleCall(call, peerId) {
+  if (!crPeers[peerId]) crPeers[peerId] = { name: '', teacher: false, call: null, conn: null, stream: null };
+  crPeers[peerId].call = call;
+
+  // FIX: 'stream' can fire multiple times (e.g. when tracks are renegotiated).
+  // Each time, re-attach the stream to the video element so it stays live.
+  call.on('stream', remoteStream => {
+    console.log('Got stream from', peerId, '— tracks:', remoteStream.getTracks().map(t => t.kind + ':' + t.readyState));
+    crPeers[peerId].stream = remoteStream;
+    crRenderRemote(peerId, remoteStream);
+    crUpdateCount();
+  });
+
+  call.on('close', () => {
+    console.log('Call closed with', peerId);
+    crOnLeft(peerId);
+  });
+
+  call.on('error', e => console.warn('Call error', peerId, e));
+}
+
+// Handle incoming data connection (the RECEIVER side of crMeshConnect)
+// FIX: Don't overwrite an already-open conn — whichever opened first wins.
+function crSetupIncomingConn(conn) {
+  const peerId = conn.peer;
+  if (!crPeers[peerId]) crPeers[peerId] = { name: '', teacher: false, call: null, conn: null, stream: null };
+
+  // Only take this conn if we don't have a live one already
+  if (!crPeers[peerId].conn || crPeers[peerId].conn.open === false) {
+    crPeers[peerId].conn = conn;
+  }
+
+  conn.on('data', d => crHandleData(peerId, d));
+  conn.on('close', () => crOnLeft(peerId));
+}
+
+function crHandleData(peerId, data) {
+  if (data.type === 'hi') {
+    // Update name/role from the direct introduction
+    if (crPeers[peerId]) {
+      crPeers[peerId].name = data.name;
+      crPeers[peerId].teacher = data.teacher;
+    }
+    // Re-render tile label with correct name
+    const lbl = document.querySelector('#crt-' + peerId + ' .cr-tile-label');
+    if (lbl) lbl.textContent = data.name + (data.teacher ? ' 🎓' : '');
+  }
+
+  if (data.type === 'chat') crReceiveChat(data.name, data.text, data.teacher);
+
+  if (data.type === 'state') {
+    // [CHANGE 21] Handle mic/cam state updates from peers
+    if (crPeers[peerId]) {
+      crPeers[peerId].micOn = data.micOn;
+      crPeers[peerId].camOn = data.camOn;
+    }
+    const lbl = document.querySelector('#crt-' + peerId + ' .cr-tile-label');
+    if (lbl) {
+      const n = crPeers[peerId]?.name || 'Peer';
+      lbl.textContent = n + (crPeers[peerId]?.teacher ? ' 🎓' : '') + (!data.micOn ? ' 🔇' : '');
+    }
+  }
+}
+
+// CLEAN DISCONNECT — removes peer's tile and frees all resources
+function crOnLeft(peerId) {
+  if (!crPeers[peerId]) return; // already removed, ignore duplicate
+  const name = crPeers[peerId]?.name || 'Someone';
+
+  // Close call and data channel cleanly
+  if (crPeers[peerId]?.call) try { crPeers[peerId].call.close(); } catch(e) {}
+  if (crPeers[peerId]?.conn) try { crPeers[peerId].conn.close(); } catch(e) {}
+
+  delete crPeers[peerId];
+
+  // Remove their video tile from the grid
+  const tile = document.getElementById('crt-' + peerId);
+  if (tile) tile.remove();
+
+  crAddSys(name + ' left');
+  crUpdateCount();
+}
+
+// ─── TILES ───
+function renderLocalTile() {
+  const grid = document.getElementById('cr-grid');
+  let tile = document.getElementById('crt-local');
+  if (!tile) {
+    tile = document.createElement('div');
+    tile.className = 'cr-tile' + (isTeacher ? ' cr-tile-teacher' : '');
+    tile.id = 'crt-local';
+    grid.prepend(tile);
+  }
+  tile.innerHTML = '';
+  if (crCamOn && localStream && localStream.getVideoTracks().length > 0) {
+    const v = document.createElement('video'); v.autoplay=true; v.muted=true; v.playsInline=true; v.srcObject=localStream; tile.appendChild(v);
+  } else { tile.appendChild(makeCrPlaceholder(myName)); }
+  const lbl = document.createElement('div'); lbl.className = 'cr-tile-label';
+  lbl.textContent = myName + (isTeacher ? ' 🎓' : ' 👤') + ' (You)';
+  if (!crMicOn) lbl.textContent += ' 🔇';
+  tile.appendChild(lbl);
+}
+
+function crRenderRemote(peerId, stream) {
+  const grid = document.getElementById('cr-grid');
+  let tile = document.getElementById('crt-' + peerId);
+  if (!tile) {
+    tile = document.createElement('div');
+    tile.className = 'cr-tile' + (crPeers[peerId]?.teacher ? ' cr-tile-teacher' : '');
+    tile.id = 'crt-' + peerId;
+    grid.appendChild(tile);
+  }
+  tile.innerHTML = '';
+
+  const hasVideo = stream && stream.getVideoTracks().length > 0 &&
+                   stream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled);
+
+  if (hasVideo) {
+    const v = document.createElement('video');
+    v.autoplay = true;
+    v.playsInline = true;
+    v.setAttribute('playsinline', '');   // iOS Safari needs the attribute too
+    v.muted = false;                      // unmuted for remote peers
+    // FIX: Set srcObject then call play() explicitly.
+    // Some browsers (especially mobile Safari) won't autoplay without an explicit play() call.
+    v.srcObject = stream;
+    v.onloadedmetadata = () => {
+      v.play().catch(e => console.warn('play() failed for', peerId, e));
+    };
+    tile.appendChild(v);
+  } else {
+    // No video track or camera off — show avatar placeholder
+    tile.appendChild(makeCrPlaceholder(crPeers[peerId]?.name || 'Peer'));
+  }
+
+  // FIX: Also attach audio-only element when there's audio but no video,
+  // so we don't lose audio just because the video track is missing/disabled.
+  if (!hasVideo && stream && stream.getAudioTracks().length > 0) {
+    const a = document.createElement('audio');
+    a.autoplay = true;
+    a.srcObject = stream;
+    a.onloadedmetadata = () => a.play().catch(e => console.warn('audio play() failed', e));
+    tile.appendChild(a);
+  }
+
+  const lbl = document.createElement('div');
+  lbl.className = 'cr-tile-label';
+  lbl.textContent = (crPeers[peerId]?.name || 'Peer') + (crPeers[peerId]?.teacher ? ' 🎓' : '');
+  tile.appendChild(lbl);
+}
+
+function makeCrPlaceholder(name) {
+  const d = document.createElement('div'); d.className = 'cam-placeholder';
+  const av = document.createElement('div'); av.className = 'cam-av'; av.textContent = (name||'?').charAt(0).toUpperCase();
+  d.appendChild(av); return d;
+}
+
+// ─── CONTROLS ───
+function crToggleMic() {
+  crMicOn = !crMicOn;
+  if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = crMicOn);
+  const b = document.getElementById('cr-mic-btn');
+  b.className = 'cr-btn' + (crMicOn ? '' : ' off');
+  b.innerHTML = (crMicOn ? '🎤' : '🔇') + '<span class="tip">' + (crMicOn ? 'Mute' : 'Unmute') + '</span>';
+  renderLocalTile();
+  // [CHANGE 23] Broadcast mic/cam state to all peers so they update labels
+  crBroadcast({ type: 'state', micOn: crMicOn, camOn: crCamOn });
+}
+
+function crToggleCam() {
+  crCamOn = !crCamOn;
+  if (localStream) localStream.getVideoTracks().forEach(t => t.enabled = crCamOn);
+  const b = document.getElementById('cr-cam-btn');
+  b.className = 'cr-btn' + (crCamOn ? '' : ' off');
+  b.innerHTML = (crCamOn ? '📷' : '🚫') + '<span class="tip">' + (crCamOn ? 'Cam off' : 'Cam on') + '</span>';
+  renderLocalTile();
+  crBroadcast({ type: 'state', micOn: crMicOn, camOn: crCamOn });
+}
+
+// [CHANGE 24] CLEAN LEAVE — notify hub, broadcast bye, stop all tracks, reset state
+function crLeave() {
+  // Tell hub we're leaving (so it can notify others)
+  if (hubConn && hubConn.open) try { hubConn.send({ type: 'left' }); } catch(e) {}
+
+  // Tell all direct peers we're leaving
+  crBroadcast({ type: 'bye', name: myName });
+
+  // Destroy connections
+  if (hubConn) try { hubConn.close(); } catch(e) {}
+  if (hubPeer) try { hubPeer.destroy(); } catch(e) {}
+  if (myPeer)  try { myPeer.destroy();  } catch(e) {}
+
+  // Stop all camera/mic tracks
+  if (localStream) localStream.getTracks().forEach(t => t.stop());
+
+  // Reset UI
+  document.getElementById('classroom-screen').classList.remove('show');
+  document.getElementById('cr-grid').innerHTML = '';
+  document.getElementById('cr-msgs').innerHTML = '';
+
+  // Clear peer state
+  Object.keys(crPeers).forEach(k => delete crPeers[k]);
+  myPeer = null; localStream = null; hubPeer = null; hubConn = null; hubConns = [];
+
+  // [CHANGE 25] Remove ?room= from URL when leaving so page resets cleanly
+  const url = new URL(window.location.href);
+  url.searchParams.delete('room');
+  window.history.replaceState({}, '', url.toString());
+
+  showToast('Left the class');
+}
+
+function crToggleChat() {
+  crChatOpen = !crChatOpen;
+  document.getElementById('cr-chat-panel').style.width = crChatOpen ? '290px' : '0';
+  document.getElementById('cr-chat-panel').style.overflow = crChatOpen ? '' : 'hidden';
+  if (crChatOpen) { crUnread = 0; document.getElementById('cr-unread').style.display = 'none'; }
+}
+
+function crChatKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); crSend(); } }
+
+function crSend() {
+  const input = document.getElementById('cr-input');
+  const text = input.value.trim(); if (!text) return;
+  input.value = '';
+  crAppendMsg(myName, text, isTeacher, true);
+  crBroadcast({ type: 'chat', name: myName, text, teacher: isTeacher });
+}
+
+function crReceiveChat(name, text, teacher) {
+  crAppendMsg(name, text, teacher, false);
+  if (!crChatOpen) {
+    crUnread++;
+    const b = document.getElementById('cr-unread');
+    b.style.display = 'flex'; b.textContent = crUnread > 9 ? '9+' : crUnread;
+  }
+}
+
+function crAppendMsg(name, text, teacher, self) {
+  const c = document.getElementById('cr-msgs');
+  const d = document.createElement('div'); d.className = 'cr-msg';
+  const nm = document.createElement('div'); nm.className = 'cr-msg-name' + (teacher ? ' teacher' : ''); nm.textContent = name + (teacher ? ' (teacher)' : '');
+  const tx = document.createElement('div'); tx.className = 'cr-msg-text'; tx.textContent = text;
+  d.append(nm, tx); c.appendChild(d); c.scrollTop = c.scrollHeight;
+}
+
+function crAddSys(text) {
+  const c = document.getElementById('cr-msgs');
+  const d = document.createElement('div'); d.className = 'cr-msg sys';
+  const tx = document.createElement('div'); tx.className = 'cr-msg-text'; tx.textContent = text;
+  d.appendChild(tx); c.appendChild(d); c.scrollTop = c.scrollHeight;
+}
+
+// [CHANGE 26] Broadcast to all directly connected peers (not through hub)
+function crBroadcast(data) {
+  Object.values(crPeers).forEach(p => {
+    if (p.conn && p.conn.open) try { p.conn.send(data); } catch(e) {}
+  });
+}
+
+function crUpdateCount() {
+  const n = 1 + Object.keys(crPeers).length;
+  document.getElementById('cr-count').textContent = n + (n === 1 ? ' participant' : ' participants');
+}
+
+// ─── MODAL HELPERS ───
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function showTeachModal() { showModal('teach-modal'); }
+function showAuthModal() { showModal('auth-modal'); }
+
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('show'); });
+});
+
+function showToast(msg) {
+  const e = document.querySelector('.toast'); if (e) e.remove();
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3500);
+}
+</script>
+</body>
+</html>.overlay.show .modal{transform:translateY(0);}
+.modal-head{padding:28px 32px 0;display:flex;align-items:flex-start;justify-content:space-between;}
+.modal-head h2{font-family:var(--display);font-size:22px;font-weight:700;}
+.modal-close{width:32px;height:32px;border-radius:50%;background:var(--surface);border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--ink2);flex-shrink:0;}
+.modal-close:hover{background:var(--border);}
+.modal-body{padding:24px 32px 32px;}
+.form-group{margin-bottom:18px;}
+.form-group label{display:block;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin-bottom:8px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-size:15px;font-family:var(--font);color:var(--ink);outline:none;background:var(--bg);transition:border-color .2s;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--ink);}
+.form-group textarea{resize:vertical;min-height:80px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.modal-btn{width:100%;padding:14px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:var(--font);border:none;transition:all .15s;margin-top:8px;}
+.modal-btn-dark{background:var(--ink);color:#fff;}
+.modal-btn-dark:hover{background:#2a2929;}
+.modal-btn-accent{background:var(--accent);color:#fff;}
+.modal-btn-accent:hover{background:#e04400;}
+.modal-btn:active{transform:scale(.99);}
+
+/* payment modal */
+.pay-amount{font-family:var(--display);font-size:48px;font-weight:800;text-align:center;margin:20px 0 4px;}
+.pay-sub{text-align:center;color:var(--ink2);font-size:14px;margin-bottom:28px;}
+.pay-card-preview{background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:14px;padding:24px;color:#fff;margin-bottom:24px;}
+.pay-card-preview .card-num{font-family:monospace;font-size:18px;letter-spacing:.15em;margin:16px 0 8px;}
+.pay-card-preview .card-row{display:flex;justify-content:space-between;font-size:12px;opacity:.7;}
+.card-input-row{display:grid;grid-template-columns:1fr 80px 80px;gap:10px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;z-index:999;animation:toastIn .25s ease;white-space:nowrap;}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* ── CLASSROOM ── */
+#classroom-screen{display:none;position:fixed;inset:0;background:#0d0f12;flex-direction:column;z-index:300;}
+#classroom-screen.show{display:flex;}
+.cr-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:#13161b;border-bottom:1px solid rgba(255,255,255,.07);}
+.cr-title{font-family:var(--display);font-size:16px;font-weight:700;color:#fff;}
+.cr-badge{font-size:11px;font-weight:600;background:rgba(255,77,0,.2);color:#ff6a30;border:1px solid rgba(255,77,0,.3);padding:4px 12px;border-radius:6px;}
+.cr-main{flex:1;display:flex;overflow:hidden;}
+.cr-video-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.cr-grid{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;padding:14px;overflow-y:auto;background:#0d0f12;align-content:start;}
+.cr-tile{position:relative;border-radius:12px;overflow:hidden;background:#1a1e25;border:1px solid rgba(255,255,255,.07);aspect-ratio:16/9;}
+.cr-tile video{width:100%;height:100%;object-fit:cover;}
+.cr-tile-label{position:absolute;bottom:8px;left:10px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:6px;}
+.cr-tile-teacher{border:2px solid #ff4d00;}
+.cam-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#1a1e25;}
+.cam-av{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;background:linear-gradient(135deg,#4f7cff,#7c5cff);color:#fff;}
+.cr-controls{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:#13161b;border-top:1px solid rgba(255,255,255,.07);}
+.cr-btn{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.13);background:#1f232c;color:#fff;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .15s;position:relative;}
+.cr-btn:hover{background:#2a2f3d;}
+.cr-btn.off{background:rgba(255,79,106,.15);border-color:rgba(255,79,106,.3);color:#ff4f6a;}
+.cr-btn.red{background:#ff4f6a;border-color:#ff4f6a;width:52px;height:52px;}
+.cr-btn.red:hover{background:#e83057;}
+.cr-btn .tip{position:absolute;bottom:calc(100%+7px);left:50%;transform:translateX(-50%);background:#1f232c;border:1px solid rgba(255,255,255,.13);font-size:11px;padding:3px 8px;border-radius:5px;white-space:nowrap;color:#fff;opacity:0;pointer-events:none;transition:opacity .15s;font-family:var(--font);}
+.cr-btn:hover .tip{opacity:1;}
+.cr-chat{width:290px;border-left:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;background:#13161b;}
+.cr-chat-head{padding:14px 16px 12px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#7a8099;border-bottom:1px solid rgba(255,255,255,.07);}
+.cr-msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+.cr-msgs::-webkit-scrollbar{width:3px;}
+.cr-msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+.cr-msg{display:flex;flex-direction:column;gap:2px;}
+.cr-msg-name{font-size:11px;font-weight:600;color:#4f7cff;}
+.cr-msg-name.teacher{color:#ff4d00;}
+.cr-msg-text{font-size:13px;color:#eef0f4;background:#1f232c;padding:7px 11px;border-radius:0 9px 9px 9px;max-width:220px;word-break:break-word;line-height:1.45;}
+.cr-msg.sys .cr-msg-text{background:transparent;color:#7a8099;font-size:11px;text-align:center;max-width:100%;}
+.cr-input-wrap{padding:10px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:6px;}
+.cr-input{flex:1;background:#1f232c;border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:8px 12px;color:#eef0f4;font-size:13px;font-family:var(--font);outline:none;}
+.cr-input:focus{border-color:#4f7cff;}
+.cr-input::placeholder{color:#7a8099;}
+.cr-send{width:33px;height:33px;background:#4f7cff;border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.cr-send:hover{background:#3d68ee;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo"><span class="logo-dot"></span>TeachLive</div>
+  <div class="nav-links">
+    <button class="nav-btn nav-btn-ghost" onclick="showTeachModal()">Teach a class</button>
+    <button class="nav-btn nav-btn-accent" onclick="showAuthModal('student')">Get Started</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">🎓 Live classes, real teachers</div>
+  <h1>Learn anything<br><span>live & interactive</span></h1>
+  <p>Join live classes taught by real experts. Ask questions in real-time, connect with classmates, pay only for what you join.</p>
+  <div class="hero-btns">
+    <button class="btn-xl btn-dark" onclick="document.getElementById('search-input').focus()">Browse classes</button>
+    <button class="btn-xl btn-outline-dark" onclick="showTeachModal()">Start teaching →</button>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-section">
+  <div class="search-wrap">
+    <input type="text" id="search-input" placeholder="Search Python, Design, Math, Music…" oninput="filterClasses()">
+    <button class="search-btn" onclick="filterClasses()">Search</button>
+  </div>
+  <div class="filter-row" id="filter-row">
+    <div class="filter-chip active" onclick="setFilter('all',this)">All</div>
+    <div class="filter-chip" onclick="setFilter('Programming',this)">Programming</div>
+    <div class="filter-chip" onclick="setFilter('Design',this)">Design</div>
+    <div class="filter-chip" onclick="setFilter('Math',this)">Math</div>
+    <div class="filter-chip" onclick="setFilter('Language',this)">Language</div>
+    <div class="filter-chip" onclick="setFilter('Music',this)">Music</div>
+    <div class="filter-chip" onclick="setFilter('Business',this)">Business</div>
+  </div>
+</div>
+
+<!-- CLASSES -->
+<div class="section">
+  <div class="section-head">
+    <h2>Live & Upcoming Classes</h2>
+    <a onclick="">See all →</a>
+  </div>
+  <div class="class-grid" id="class-grid"></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MODALS
+═══════════════════════════════════════ -->
+
+<!-- CREATE CLASS MODAL -->
+<div class="overlay" id="teach-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Create a Class</h2>
+      <button class="modal-close" onclick="closeModal('teach-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="t-name" placeholder="e.g. Sarah Chen">
+      </div>
+      <div class="form-group">
+        <label>Class Title</label>
+        <input type="text" id="t-title" placeholder="e.g. Python for Beginners">
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="t-cat">
+          <option>Programming</option>
+          <option>Design</option>
+          <option>Math</option>
+          <option>Language</option>
+          <option>Music</option>
+          <option>Business</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="t-desc" placeholder="What will students learn?"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Price (USD)</label>
+          <input type="number" id="t-price" placeholder="15" min="1">
+        </div>
+        <div class="form-group">
+          <label>Max Students</label>
+          <input type="number" id="t-max" placeholder="20" min="1">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Emoji Icon</label>
+        <input type="text" id="t-emoji" placeholder="🐍" maxlength="2" style="font-size:24px;width:70px;">
+      </div>
+      <button class="modal-btn modal-btn-dark" onclick="createClass()">Create & Go Live</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAY MODAL -->
+<div class="overlay" id="pay-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Join Class</h2>
+      <button class="modal-close" onclick="closeModal('pay-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="pay-class-info" style="background:var(--surface);border-radius:12px;padding:16px;margin-bottom:20px;display:flex;align-items:center;gap:14px;">
+        <div id="pay-class-emoji" style="font-size:36px;"></div>
+        <div>
+          <div id="pay-class-title" style="font-family:var(--display);font-size:16px;font-weight:700;"></div>
+          <div id="pay-class-teacher" style="font-size:13px;color:var(--ink2);margin-top:3px;"></div>
+        </div>
+      </div>
+
+      <div class="pay-amount" id="pay-amount-display">$0</div>
+      <div class="pay-sub">One-time payment · Join instantly after</div>
+
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="s-name" placeholder="Enter your name">
+      </div>
+
+      <div class="pay-card-preview">
+        <div style="font-size:11px;opacity:.6;letter-spacing:.1em;text-transform:uppercase;">Card Number</div>
+        <div class="card-num" id="card-num-display">•••• •••• •••• ••••</div>
+        <div class="card-row"><span>Card Holder</span><span>Expires</span></div>
+        <div class="card-row" style="margin-top:4px;opacity:1;font-size:14px;font-weight:500;"><span id="holder-preview">YOUR NAME</span><span id="exp-preview">MM/YY</span></div>
+      </div>
+
+      <div class="form-group">
+        <label>Card Number</label>
+        <input type="text" id="cc-num" placeholder="4242 4242 4242 4242" maxlength="19" oninput="formatCard(this)" onchange="updateCardPreview()">
+      </div>
+      <div class="card-input-row">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Name on Card</label>
+          <input type="text" id="cc-name" placeholder="Full name" oninput="document.getElementById('holder-preview').textContent=this.value.toUpperCase()||'YOUR NAME'">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Expiry</label>
+          <input type="text" id="cc-exp" placeholder="MM/YY" maxlength="5" oninput="document.getElementById('exp-preview').textContent=this.value||'MM/YY'">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>CVC</label>
+          <input type="text" id="cc-cvc" placeholder="123" maxlength="3">
+        </div>
+      </div>
+      <button class="modal-btn modal-btn-accent" id="pay-btn" onclick="processPayment()" style="margin-top:20px;">Pay & Join Class</button>
+      <div id="pay-status" style="text-align:center;font-size:13px;color:var(--ink3);margin-top:10px;min-height:18px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="overlay" id="auth-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Get Started</h2>
+      <button class="modal-close" onclick="closeModal('auth-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <button class="modal-btn modal-btn-dark" onclick="closeModal('auth-modal');showTeachModal()">I want to Teach</button>
+        <button class="modal-btn modal-btn-accent" onclick="closeModal('auth-modal');showToast('Browse classes above and click Join!')">I want to Learn</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     CLASSROOM
+═══════════════════════════════════════ -->
+<div id="classroom-screen">
+  <div class="cr-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="nav-logo" style="font-size:16px;"><span class="logo-dot"></span>TeachLive</div>
+      <span id="cr-title" class="cr-title"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="cr-badge" id="cr-live-badge">● LIVE</span>
+      <span id="cr-count" style="font-size:12px;color:#7a8099;"></span>
+    </div>
+  </div>
+  <div class="cr-main">
+    <div class="cr-video-area">
+      <div class="cr-grid" id="cr-grid"></div>
+      <div class="cr-controls">
+        <div class="cr-btn" id="cr-mic-btn" onclick="crToggleMic()">🎤<span class="tip">Mute</span></div>
+        <div class="cr-btn" id="cr-cam-btn" onclick="crToggleCam()">📷<span class="tip">Camera</span></div>
+        <div class="cr-btn red" onclick="crLeave()">📞<span class="tip">Leave</span></div>
+        <div class="cr-btn" onclick="crToggleChat()" style="position:relative;">💬<div id="cr-unread" style="position:absolute;top:-4px;right:-4px;background:#ff4f6a;color:#fff;font-size:9px;font-weight:700;width:15px;height:15px;border-radius:50%;display:none;align-items:center;justify-content:center;"></div><span class="tip">Chat</span></div>
+        <div id="cr-role-badge" style="font-size:12px;color:#7a8099;padding:0 12px;"></div>
+      </div>
+    </div>
+    <div class="cr-chat" id="cr-chat-panel">
+      <div class="cr-chat-head">Class Chat</div>
+      <div class="cr-msgs" id="cr-msgs"></div>
+      <div class="cr-input-wrap">
+        <input class="cr-input" id="cr-input" placeholder="Ask a question…" onkeydown="crChatKey(event)">
+        <button class="cr-send" onclick="crSend()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA STORE (in-memory, prototype)
+// ═══════════════════════════════════════════════
+const CLASSES = [
+  { id:'c1', title:'Python for Beginners', teacher:'Amara Osei', category:'Programming', emoji:'🐍', price:12, maxStudents:5, students:7, live:true, desc:'Learn Python from scratch. Variables, loops, functions and your first project.' },
+  { id:'c2', title:'UI/UX Fundamentals', teacher:'Priya Sharma', category:'Design', emoji:'🎨', price:18, maxStudents:5, students:3, live:true, desc:'Master the core principles of great interface design.' },
+  { id:'c3', title:'Calculus Made Simple', teacher:'James Okonkwo', category:'Math', emoji:'📐', price:10, maxStudents:5, students:11, live:false, desc:'Derivatives, integrals and real-world applications explained clearly.' },
+  { id:'c4', title:'Spanish Conversation', teacher:'Maria Lopez', category:'Language', emoji:'🇪🇸', price:15, maxStudents:5, students:5, live:true, desc:'Practice speaking Spanish with a native speaker. Beginner friendly.' },
+  { id:'c5', title:'Guitar Basics', teacher:'Kwame Asante', category:'Music', emoji:'🎸', price:20, maxStudents:5, students:2, live:false, desc:'Learn chords, strumming and your first songs on acoustic guitar.' },
+  { id:'c6', title:'Startup Pitch Masterclass', teacher:'Jin Park', category:'Business', emoji:'🚀', price:25, maxStudents:5, students:14, live:true, desc:'How to pitch to investors. Real pitch frameworks and live practice.' },
+];
+
+// [CHANGE 1] MAX_ROOM_SIZE — hard cap for WebRTC mesh (5 works well peer-to-peer)
+const MAX_ROOM_SIZE = 5;
+
+let activeFilter = 'all';
+let pendingClass = null;
+let myName = '';
+let isTeacher = false;
+let classTitle = '';
+
+// ─── RENDER CLASSES ───
+function renderClasses(list) {
+  const grid = document.getElementById('class-grid');
+  if (!list.length) { grid.innerHTML = '<div style="color:var(--ink3);padding:32px 0;font-size:15px;">No classes found. Try a different search.</div>'; return; }
+  grid.innerHTML = list.map(c => `
+    <div class="class-card" onclick="clickClass('${c.id}')">
+      <div class="card-banner" style="background:${bannerBg(c.category)}">
+        <span style="font-size:52px">${c.emoji}</span>
+        ${c.live ? `<div class="card-live-badge"><span class="card-live-dot"></span>LIVE NOW</div>` : `<div class="card-scheduled-badge">UPCOMING</div>`}
+      </div>
+      <div class="card-body">
+        <div class="card-category">${c.category}</div>
+        <div class="card-title">${c.title}</div>
+        <div class="card-teacher"><div class="teacher-av">${c.teacher.charAt(0)}</div>${c.teacher}</div>
+        <div class="card-footer">
+          <div class="card-price">$${c.price}<span>/session</span></div>
+          <button class="join-btn ${c.live?'live':''}" onclick="event.stopPropagation();clickClass('${c.id}')">${c.live?'Join Now':'Enroll'}</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function bannerBg(cat) {
+  const m = {Programming:'#e8f4e8',Design:'#f4e8f4',Math:'#e8eef4',Language:'#f4f0e8',Music:'#f4e8e8',Business:'#fff3e8'};
+  return m[cat]||'#f0f0f0';
+}
+
+function filterClasses() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  let list = CLASSES;
+  if (activeFilter !== 'all') list = list.filter(c => c.category === activeFilter);
+  if (q) list = list.filter(c => c.title.toLowerCase().includes(q) || c.teacher.toLowerCase().includes(q) || c.category.toLowerCase().includes(q));
+  renderClasses(list);
+}
+
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  filterClasses();
+}
+
+renderClasses(CLASSES);
+
+// [CHANGE 2] URL-BASED ROOM JOINING
+// On page load, check if ?room=xxx is in the URL.
+// If yes, pre-fill the join flow so sharing a link drops you straight into the room.
+(function checkUrlRoom() {
+  const params = new URLSearchParams(window.location.search);
+  const roomParam = params.get('room');
+  if (!roomParam) return;
+
+  // Find the class matching the room code, or create a generic placeholder
+  const matched = CLASSES.find(c => c.id === roomParam);
+  if (matched) {
+    // Auto-open the payment modal for this class
+    setTimeout(() => clickClass(matched.id), 300);
+  } else {
+    // Room code is custom (teacher-created) — show a generic join prompt
+    setTimeout(() => {
+      pendingClass = {
+        id: roomParam,
+        title: 'Live Class (' + roomParam + ')',
+        teacher: 'Host',
+        emoji: '🎓',
+        price: 0,
+        maxStudents: MAX_ROOM_SIZE
+      };
+      document.getElementById('pay-class-emoji').textContent = '🎓';
+      document.getElementById('pay-class-title').textContent = 'Live Class';
+      document.getElementById('pay-class-teacher').textContent = 'Room: ' + roomParam;
+      document.getElementById('pay-amount-display').textContent = 'Free';
+      document.getElementById('pay-btn').textContent = 'Join Class';
+      document.getElementById('pay-status').textContent = '';
+      document.getElementById('s-name').value = '';
+      showModal('pay-modal');
+    }, 300);
+  }
+})();
+
+// ─── CLASS CLICK → pay ───
+function clickClass(id) {
+  const c = CLASSES.find(x => x.id === id);
+  if (!c) return;
+  pendingClass = c;
+  document.getElementById('pay-class-emoji').textContent = c.emoji;
+  document.getElementById('pay-class-title').textContent = c.title;
+  document.getElementById('pay-class-teacher').textContent = 'by ' + c.teacher;
+  document.getElementById('pay-amount-display').textContent = '$' + c.price;
+  document.getElementById('pay-btn').textContent = 'Pay $' + c.price + ' & Join Class';
+  document.getElementById('pay-status').textContent = '';
+  document.getElementById('s-name').value = '';
+  showModal('pay-modal');
+}
+
+// ─── PAYMENT FLOW ───
+function formatCard(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,16);
+  el.value = v.replace(/(.{4})/g,'$1 ').trim();
+  document.getElementById('card-num-display').textContent = v.replace(/(.{4})/g,'$1 ').trim() || '•••• •••• •••• ••••';
+}
+function updateCardPreview() {}
+
+function processPayment() {
+  const sName = document.getElementById('s-name').value.trim();
+  const num = document.getElementById('cc-num').value.replace(/\s/g,'');
+  const exp = document.getElementById('cc-exp').value;
+  const cvc = document.getElementById('cc-cvc').value;
+
+  if (!sName) { setPayStatus('Please enter your name'); return; }
+
+  // Allow free join (price=0, e.g. from URL link with unknown room)
+  const isFree = !pendingClass.price || pendingClass.price === 0;
+  if (!isFree) {
+    if (num.length < 12) { setPayStatus('Enter a valid card number'); return; }
+    if (!exp) { setPayStatus('Enter expiry date'); return; }
+    if (!cvc) { setPayStatus('Enter CVC'); return; }
+  }
+
+  const btn = document.getElementById('pay-btn');
+  btn.innerHTML = '<span class="spinner"></span> ' + (isFree ? 'Joining…' : 'Processing…');
+  btn.disabled = true;
+  setPayStatus('');
+
+  setTimeout(() => {
+    if (!isFree) {
+      btn.innerHTML = '✓ Payment Successful!';
+      btn.style.background = '#00a878';
+    }
+    setPayStatus('Redirecting to classroom…');
+    setTimeout(() => {
+      closeModal('pay-modal');
+      btn.innerHTML = isFree ? 'Join Class' : 'Pay $' + pendingClass.price + ' & Join Class';
+      btn.style.background = '';
+      btn.disabled = false;
+      myName = sName;
+      isTeacher = false;
+      classTitle = pendingClass.title;
+      enterClassroom();
+    }, 900);
+  }, isFree ? 400 : 1800);
+}
+
+function setPayStatus(msg) { document.getElementById('pay-status').textContent = msg; }
+
+// ─── CREATE CLASS ───
+function createClass() {
+  const name = document.getElementById('t-name').value.trim();
+  const title = document.getElementById('t-title').value.trim();
+  const cat = document.getElementById('t-cat').value;
+  const price = parseFloat(document.getElementById('t-price').value) || 10;
+  // [CHANGE 3] Cap maxStudents to MAX_ROOM_SIZE regardless of what teacher typed
+  const maxS = Math.min(parseInt(document.getElementById('t-max').value) || MAX_ROOM_SIZE, MAX_ROOM_SIZE);
+  const emoji = document.getElementById('t-emoji').value || '📚';
+  const desc = document.getElementById('t-desc').value.trim();
+
+  if (!name) { showToast('Enter your name'); return; }
+  if (!title) { showToast('Enter a class title'); return; }
+
+  // [CHANGE 4] Generate a short room code (6 chars) used in the shareable URL
+  const roomId = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const newClass = { id: roomId, title, teacher: name, category: cat, emoji, price, maxStudents: maxS, students: 0, live: true, desc };
+  CLASSES.unshift(newClass);
+  filterClasses();
+
+  closeModal('teach-modal');
+  showToast('Class created! Going live…');
+
+  myName = name;
+  isTeacher = true;
+  classTitle = title;
+  pendingClass = newClass;
+
+  setTimeout(() => enterClassroom(), 600);
+}
+
+// ═══════════════════════════════════════════════
+// CLASSROOM — WebRTC via PeerJS
+// ARCHITECTURE: Distributed mesh (no single hub dependency)
+//   - One peer tries to claim the "hub" ID for the room (first-in wins)
+//   - Hub distributes member lists and announces joins/leaves
+//   - All peers connect DIRECTLY to each other for video + data (mesh)
+//   - If hub peer leaves, remaining peers stay connected (mesh survives)
+//   - Late joiners connect to hub to get current member list, then mesh directly
+// ═══════════════════════════════════════════════
+
+let myPeer = null, localStream = null;
+let crMicOn = true, crCamOn = true, crChatOpen = true;
+let crUnread = 0;
+
+// crPeers: map of peerId → { name, teacher, call, conn, stream }
+const crPeers = {};
+
+// Hub state (only used by whoever claimed the hub ID)
+let hubPeer = null;
+let hubConns = []; // data connections from hub to each member
+
+// hubConn: non-hub peers' connection TO the hub for discovery
+let hubConn = null;
+
+let roomCode = '';
+
+// [CHANGE 5] Build the hub peer ID from the room code.
+// All users connecting to the same room target the same hub ID.
+function hubId(code) { return 'tl-hub-' + code.toLowerCase(); }
+
+// [CHANGE 6] PeerJS config with multiple STUN servers for global NAT traversal.
+// These are public Google STUN servers — no backend needed, works on GitHub Pages.
+const PEER_CONFIG = {
+  debug: 0,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+    ]
+  }
+};
+
+async function enterClassroom() {
+  roomCode = pendingClass.id;
+
   // [CHANGE 7] Update the URL with the room code so it's shareable.
   // Anyone opening this link jumps straight to the payment/join modal.
   const url = new URL(window.location.href);
