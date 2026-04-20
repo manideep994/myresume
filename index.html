@@ -836,6 +836,842 @@ async function wbAnswer(question, answerId, container) {
   wbHistory.push({ role: 'user', parts: [{ text: question }] });
   if (wbHistory.length > MAX_HISTORY) wbHistory = wbHistory.slice(-MAX_HISTORY);
 
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
+
+  var body = {
+    system_instruction: { parts: [{ text: GEMINI_SYSTEM }] },
+    contents: wbHistory.slice(),
+    generationConfig: {
+      maxOutputTokens: 400,
+      temperature: 0.7
+    }
+  };
+
+  try {
+    var response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      var err = await response.json().catch(function(){ return {}; });
+      var msg = (err.error && err.error.message) || ('Gemini API error: ' + response.status);
+      textEl.textContent = msg;
+      return;
+    }
+
+    var data = await response.json();
+    var answer = '';
+
+    try {
+      answer = data.candidates[0].content.parts[0].text || 'No response received.';
+    } catch(e) {
+      answer = 'Could not parse Gemini response. Please try again.';
+    }
+
+    // Clean up any markdown symbols Gemini sometimes adds
+    answer = answer
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/^#+\s/gm, '')
+      .replace(/`/g, '')
+      .trim();
+
+    // Typewriter effect
+    textEl.textContent = '';
+    var i = 0;
+    function typeNext() {
+      if (i < answer.length) {
+        textEl.textContent += answer[i];
+        i++;
+        container.scrollTop = container.scrollHeight;
+        setTimeout(typeNext, 10);
+      } else {
+        // Save assistant reply to history
+        wbHistory.push({ role: 'model', parts: [{ text: answer }] });
+        if (wbHistory.length > MAX_HISTORY) wbHistory = wbHistory.slice(-MAX_HISTORY);
+      }
+    }
+    typeNext();
+
+  } catch (err) {
+    textEl.textContent = 'Connection error: ' + err.message + '. Check your API key and internet.';
+  }
+}
+
+function wbClearHistory() {
+  wbHistory = [];
+  wbSys('Conversation cleared — starting fresh.');
+}
+
+
+// ─── API KEY ───
+function saveApiKey() {
+  var key = document.getElementById('apikey-input').value.trim();
+  if (!key) { document.getElementById('apikey-status').textContent = 'Please paste your Gemini API key.'; return; }
+  if (!key.startsWith('AIza')) {
+    document.getElementById('apikey-status').textContent = 'Gemini keys start with AIza... Check and try again.';
+    return;
+  }
+  GEMINI_API_KEY = key;
+  document.getElementById('apikey-input').value = '';
+  document.getElementById('apikey-status').textContent = '✓ Gemini key saved! Start listening to ask questions.';
+  setTimeout(function(){ document.getElementById('apikey-status').textContent = ''; }, 4000);
+}
+
+// ─── MODAL / UTILS ───
+function showModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function showTeachModal(){showModal('teach-modal');}
+function showAuthModal(){showModal('auth-modal');}
+document.querySelectorAll('.overlay').forEach(function(o){
+  o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('show');});
+});
+function showToast(msg){
+  var e=document.querySelector('.toast');if(e)e.remove();
+  var t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);setTimeout(function(){t.remove();},3500);
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>.cr-title{font-family:var(--display);font-size:16px;font-weight:700;color:#fff;}
+.cr-badge{font-size:11px;font-weight:600;background:rgba(255,77,0,.2);color:#ff6a30;border:1px solid rgba(255,77,0,.3);padding:4px 12px;border-radius:6px;}
+.cr-main{flex:1;display:flex;overflow:hidden;}
+.cr-video-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.cr-grid{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;padding:14px;overflow-y:auto;background:#0d0f12;align-content:start;}
+.cr-tile{position:relative;border-radius:12px;overflow:hidden;background:#1a1e25;border:1px solid rgba(255,255,255,.07);aspect-ratio:16/9;}
+.cr-tile video{width:100%;height:100%;object-fit:cover;}
+.cr-tile-label{position:absolute;bottom:8px;left:10px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:6px;}
+.cr-tile-teacher{border:2px solid #ff4d00;}
+.cam-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#1a1e25;}
+.cam-av{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;background:linear-gradient(135deg,#4f7cff,#7c5cff);color:#fff;}
+.cr-controls{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:#13161b;border-top:1px solid rgba(255,255,255,.07);flex-wrap:wrap;}
+.cr-btn{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.13);background:#1f232c;color:#fff;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .15s;position:relative;}
+.cr-btn:hover{background:#2a2f3d;}
+.cr-btn.off{background:rgba(255,79,106,.15);border-color:rgba(255,79,106,.3);color:#ff4f6a;}
+.cr-btn.red{background:#ff4f6a;border-color:#ff4f6a;width:52px;height:52px;}
+.cr-btn.red:hover{background:#e83057;}
+.cr-btn .tip{position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);background:#1f232c;border:1px solid rgba(255,255,255,.13);font-size:11px;padding:3px 8px;border-radius:5px;white-space:nowrap;color:#fff;opacity:0;pointer-events:none;transition:opacity .15s;font-family:var(--font);}
+.cr-btn:hover .tip{opacity:1;}
+.cr-chat{width:290px;border-left:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;background:#13161b;transition:width .25s ease;overflow:hidden;}
+.cr-chat.collapsed{width:0;}
+.cr-chat-head{padding:14px 16px 12px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#7a8099;border-bottom:1px solid rgba(255,255,255,.07);min-width:290px;}
+.cr-msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:290px;}
+.cr-msgs::-webkit-scrollbar{width:3px;}
+.cr-msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+.cr-msg{display:flex;flex-direction:column;gap:2px;}
+.cr-msg-name{font-size:11px;font-weight:600;color:#4f7cff;}
+.cr-msg-name.teacher{color:#ff4d00;}
+.cr-msg-text{font-size:13px;color:#eef0f4;background:#1f232c;padding:7px 11px;border-radius:0 9px 9px 9px;max-width:220px;word-break:break-word;line-height:1.45;}
+.cr-msg.sys .cr-msg-text{background:transparent;color:#7a8099;font-size:11px;text-align:center;max-width:100%;}
+.cr-input-wrap{padding:10px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:6px;min-width:290px;}
+.cr-input{flex:1;background:#1f232c;border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:8px 12px;color:#eef0f4;font-size:13px;font-family:var(--font);outline:none;}
+.cr-input:focus{border-color:#4f7cff;}
+.cr-input::placeholder{color:#7a8099;}
+.cr-send{width:33px;height:33px;background:#4f7cff;border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.cr-send:hover{background:#3d68ee;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* WHITEBOARD */
+.wb-panel{width:0;overflow:hidden;display:flex;flex-direction:column;background:#0a0c10;border-left:1px solid rgba(255,255,255,.07);transition:width .25s ease;}
+.wb-panel.open{width:340px;}
+.wb-head{padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;}
+.wb-head-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#7a8099;display:flex;align-items:center;gap:8px;}
+.wb-live-dot{width:6px;height:6px;border-radius:50%;background:#2ecc8a;animation:wbpulse 1.5s infinite;}
+.wb-live-dot.off{background:#555;animation:none;}
+@keyframes wbpulse{0%,100%{opacity:1}50%{opacity:.3}}
+.wb-captions{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:340px;}
+.wb-captions::-webkit-scrollbar{width:3px;}
+.wb-captions::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px;}
+.caption-block{display:flex;flex-direction:column;gap:3px;animation:fadeUp .2s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.caption-q-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#f5a623;}
+.caption-speaker{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px;}
+.caption-text{font-size:14px;line-height:1.55;color:#dde0e8;background:#13161b;padding:8px 12px;border-radius:0 10px 10px 10px;word-break:break-word;}
+.caption-text.interim{color:#7a8099;font-style:italic;background:transparent;padding:2px 12px;}
+.spk-0{color:#4f7cff;}.spk-1{color:#ff4d00;}.spk-2{color:#2ecc8a;}.spk-3{color:#f5a623;}.spk-4{color:#b44fff;}
+.caption-answer{margin-top:6px;background:#0f1a10;border-left:3px solid #2ecc8a;border-radius:0 8px 8px 0;padding:8px 12px;}
+.caption-answer-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#2ecc8a;margin-bottom:4px;}
+.caption-answer-text{font-size:13px;color:#b8f0c8;line-height:1.55;}
+.caption-answer-loading{color:#2ecc8a;font-style:italic;opacity:.7;}
+.wb-bottom{padding:10px 14px;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:8px;flex-shrink:0;min-width:340px;}
+.wb-toggle{flex:1;padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.13);background:#1f232c;color:#eef0f4;font-size:13px;font-family:var(--font);cursor:pointer;text-align:center;transition:all .15s;}
+.wb-toggle:hover{background:#2a2f3d;}
+.wb-toggle.active{background:#2ecc8a;border-color:#2ecc8a;color:#000;font-weight:600;}
+.wb-clear{padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#7a8099;font-size:12px;cursor:pointer;font-family:var(--font);transition:all .15s;}
+.wb-clear:hover{color:#ff4f6a;border-color:rgba(255,79,106,.3);}
+@media(max-width:640px){
+  nav{padding:0 16px;}
+  .hero{padding:48px 20px 40px;}
+  .search-section,.section{padding-left:20px;padding-right:20px;}
+  .cr-chat,.wb-panel{position:absolute;right:0;top:0;bottom:0;z-index:10;}
+}
+
+/* API KEY MODAL */
+.apikey-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#0f1a10;border-top:1px solid rgba(46,204,138,.2);min-width:340px;flex-shrink:0;}
+.apikey-input{flex:1;background:#1a2a1a;border:1px solid rgba(46,204,138,.3);border-radius:7px;padding:7px 10px;color:#b8f0c8;font-size:12px;font-family:monospace;outline:none;}
+.apikey-input:focus{border-color:#2ecc8a;}
+.apikey-input::placeholder{color:#3a5a3a;font-family:monospace;}
+.apikey-save{padding:7px 14px;background:#2ecc8a;border:none;border-radius:7px;color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);white-space:nowrap;}
+.apikey-save:hover{background:#27b577;}
+.apikey-status{font-size:10px;color:#2ecc8a;min-width:340px;padding:0 16px 6px;font-family:monospace;}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo"><span class="logo-dot"></span>TeachLive</div>
+  <div class="nav-links">
+    <button class="nav-btn nav-btn-ghost" onclick="showTeachModal()">Teach a class</button>
+    <button class="nav-btn nav-btn-accent" onclick="showAuthModal()">Get Started</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">🎓 Live classes, real teachers</div>
+  <h1>Learn anything<br><span>live &amp; interactive</span></h1>
+  <p>Join live classes taught by real experts. Ask questions in real-time, connect with classmates, pay only for what you join.</p>
+  <div class="hero-btns">
+    <button class="btn-xl btn-dark" onclick="document.getElementById('search-input').focus()">Browse classes</button>
+    <button class="btn-xl btn-outline-dark" onclick="showTeachModal()">Start teaching →</button>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-section">
+  <div class="search-wrap">
+    <input type="text" id="search-input" placeholder="Search Python, Design, Math, Music…" oninput="filterClasses()">
+    <button class="search-btn" onclick="filterClasses()">Search</button>
+  </div>
+  <div class="filter-row">
+    <div class="filter-chip active" onclick="setFilter('all',this)">All</div>
+    <div class="filter-chip" onclick="setFilter('Programming',this)">Programming</div>
+    <div class="filter-chip" onclick="setFilter('Design',this)">Design</div>
+    <div class="filter-chip" onclick="setFilter('Math',this)">Math</div>
+    <div class="filter-chip" onclick="setFilter('Language',this)">Language</div>
+    <div class="filter-chip" onclick="setFilter('Music',this)">Music</div>
+    <div class="filter-chip" onclick="setFilter('Business',this)">Business</div>
+  </div>
+</div>
+
+<!-- CLASSES -->
+<div class="section">
+  <div class="section-head"><h2>Live &amp; Upcoming Classes</h2></div>
+  <div class="class-grid" id="class-grid"></div>
+</div>
+
+<!-- CREATE CLASS MODAL -->
+<div class="overlay" id="teach-modal">
+  <div class="modal">
+    <div class="modal-head"><h2>Create a Class</h2><button class="modal-close" onclick="closeModal('teach-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Your Name</label><input type="text" id="t-name" placeholder="e.g. Sarah Chen"></div>
+      <div class="form-group"><label>Class Title</label><input type="text" id="t-title" placeholder="e.g. Python for Beginners"></div>
+      <div class="form-group"><label>Category</label>
+        <select id="t-cat"><option>Programming</option><option>Design</option><option>Math</option><option>Language</option><option>Music</option><option>Business</option></select>
+      </div>
+      <div class="form-group"><label>Description</label><textarea id="t-desc" placeholder="What will students learn?"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>Price (USD)</label><input type="number" id="t-price" placeholder="15" min="1"></div>
+        <div class="form-group"><label>Max Students</label><input type="number" id="t-max" placeholder="5" min="1" max="5"></div>
+      </div>
+      <div class="form-group"><label>Emoji Icon</label><input type="text" id="t-emoji" placeholder="🐍" maxlength="2" style="font-size:24px;width:70px;"></div>
+      <button class="modal-btn modal-btn-dark" onclick="createClass()">Create &amp; Go Live</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAY MODAL -->
+<div class="overlay" id="pay-modal">
+  <div class="modal">
+    <div class="modal-head"><h2>Join Class</h2><button class="modal-close" onclick="closeModal('pay-modal')">✕</button></div>
+    <div class="modal-body">
+      <div style="background:var(--surface);border-radius:12px;padding:16px;margin-bottom:20px;display:flex;align-items:center;gap:14px;">
+        <div id="pay-class-emoji" style="font-size:36px;"></div>
+        <div>
+          <div id="pay-class-title" style="font-family:var(--display);font-size:16px;font-weight:700;"></div>
+          <div id="pay-class-teacher" style="font-size:13px;color:var(--ink2);margin-top:3px;"></div>
+        </div>
+      </div>
+      <div class="pay-amount" id="pay-amount-display">$0</div>
+      <div class="pay-sub">One-time payment · Join instantly after</div>
+      <div class="form-group"><label>Your Name</label><input type="text" id="s-name" placeholder="Enter your name"></div>
+      <div class="pay-card-preview">
+        <div style="font-size:11px;opacity:.6;letter-spacing:.1em;text-transform:uppercase;">Card Number</div>
+        <div class="card-num" id="card-num-display">•••• •••• •••• ••••</div>
+        <div class="card-row"><span>Card Holder</span><span>Expires</span></div>
+        <div class="card-row" style="margin-top:4px;opacity:1;font-size:14px;font-weight:500;"><span id="holder-preview">YOUR NAME</span><span id="exp-preview">MM/YY</span></div>
+      </div>
+      <div class="form-group"><label>Card Number</label><input type="text" id="cc-num" placeholder="4242 4242 4242 4242" maxlength="19" oninput="formatCard(this)"></div>
+      <div class="card-input-row">
+        <div class="form-group" style="margin-bottom:0"><label>Name on Card</label><input type="text" id="cc-name" placeholder="Full name" oninput="document.getElementById('holder-preview').textContent=this.value.toUpperCase()||'YOUR NAME'"></div>
+        <div class="form-group" style="margin-bottom:0"><label>Expiry</label><input type="text" id="cc-exp" placeholder="MM/YY" maxlength="5" oninput="document.getElementById('exp-preview').textContent=this.value||'MM/YY'"></div>
+        <div class="form-group" style="margin-bottom:0"><label>CVC</label><input type="text" id="cc-cvc" placeholder="123" maxlength="3"></div>
+      </div>
+      <button class="modal-btn modal-btn-accent" id="pay-btn" onclick="processPayment()" style="margin-top:20px;">Pay &amp; Join Class</button>
+      <div id="pay-status" style="text-align:center;font-size:13px;color:var(--ink3);margin-top:10px;min-height:18px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="overlay" id="auth-modal">
+  <div class="modal">
+    <div class="modal-head"><h2>Get Started</h2><button class="modal-close" onclick="closeModal('auth-modal')">✕</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <button class="modal-btn modal-btn-dark" onclick="closeModal('auth-modal');showTeachModal()">I want to Teach</button>
+        <button class="modal-btn modal-btn-accent" onclick="closeModal('auth-modal');showToast('Browse classes and click Join!')">I want to Learn</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLASSROOM -->
+<div id="classroom-screen">
+  <div class="cr-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="nav-logo" style="font-size:16px;"><span class="logo-dot"></span>TeachLive</div>
+      <span id="cr-title" class="cr-title"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="cr-badge">● LIVE</span>
+      <span id="cr-count" style="font-size:12px;color:#7a8099;"></span>
+    </div>
+  </div>
+  <div class="cr-main">
+    <div class="cr-video-area">
+      <div class="cr-grid" id="cr-grid"></div>
+      <div class="cr-controls">
+        <div class="cr-btn" id="cr-mic-btn" onclick="crToggleMic()">🎤<span class="tip">Mute</span></div>
+        <div class="cr-btn" id="cr-cam-btn" onclick="crToggleCam()">📷<span class="tip">Camera</span></div>
+        <div class="cr-btn red" onclick="crLeave()">📞<span class="tip">Leave</span></div>
+        <div class="cr-btn" onclick="crToggleChat()" style="position:relative;">
+          💬
+          <div id="cr-unread" style="position:absolute;top:-4px;right:-4px;background:#ff4f6a;color:#fff;font-size:9px;font-weight:700;width:15px;height:15px;border-radius:50%;display:none;align-items:center;justify-content:center;"></div>
+          <span class="tip">Chat</span>
+        </div>
+        <div class="cr-btn" onclick="crToggleWhiteboard()">📋<span class="tip">Q&amp;A Board</span></div>
+        <div id="cr-role-badge" style="font-size:12px;color:#7a8099;padding:0 8px;"></div>
+      </div>
+    </div>
+    <!-- CHAT SIDEBAR -->
+    <div class="cr-chat" id="cr-chat-panel">
+      <div class="cr-chat-head">Class Chat</div>
+      <div class="cr-msgs" id="cr-msgs"></div>
+      <div class="cr-input-wrap">
+        <input class="cr-input" id="cr-input" placeholder="Ask a question…" onkeydown="crChatKey(event)">
+        <button class="cr-send" onclick="crSend()">➤</button>
+      </div>
+    </div>
+    <!-- WHITEBOARD / Q&A SIDEBAR -->
+    <div class="wb-panel" id="wb-panel">
+      <div class="wb-head">
+        <div class="wb-head-title">
+          <span class="wb-live-dot off" id="wb-dot"></span>
+          Live Q&amp;A Board
+        </div>
+        <svg onclick="crToggleWhiteboard()" style="cursor:pointer;opacity:.5;width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </div>
+      <div class="wb-captions" id="wb-captions">
+        <div class="wb-placeholder" style="text-align:center;color:#555;font-size:13px;padding:40px 16px;line-height:1.7;">
+          Tap "Start Listening" below,<br>then speak your question.<br><br>
+          Your question will appear here<br>with an AI answer instantly.
+        </div>
+      </div>
+      <div class="wb-bottom">
+        <div class="wb-toggle" id="wb-btn" onclick="wbToggle()">🎙 Start Listening</div>
+        <button class="wb-clear" onclick="wbClearHistory();wbClear()">Clear</button>
+      </div>
+      <div class="apikey-bar">
+        <input class="apikey-input" id="apikey-input" type="password" placeholder="Paste Gemini API key (AIza...)…" onkeydown="if(event.key==='Enter')saveApiKey()">
+        <button class="apikey-save" onclick="saveApiKey()">Save</button>
+      </div>
+      <div class="apikey-status" id="apikey-status"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ───
+var MAX_ROOM = 5;
+var CLASSES = [
+  {id:'c1',title:'Python for Beginners',teacher:'Amara Osei',category:'Programming',emoji:'🐍',price:12,live:true},
+  {id:'c2',title:'UI/UX Fundamentals',teacher:'Priya Sharma',category:'Design',emoji:'🎨',price:18,live:true},
+  {id:'c3',title:'Calculus Made Simple',teacher:'James Okonkwo',category:'Math',emoji:'📐',price:10,live:false},
+  {id:'c4',title:'Spanish Conversation',teacher:'Maria Lopez',category:'Language',emoji:'🇪🇸',price:15,live:true},
+  {id:'c5',title:'Guitar Basics',teacher:'Kwame Asante',category:'Music',emoji:'🎸',price:20,live:false},
+  {id:'c6',title:'Startup Pitch Masterclass',teacher:'Jin Park',category:'Business',emoji:'🚀',price:25,live:true},
+];
+var activeFilter='all', pendingClass=null, myName='', isTeacher=false, classTitle='';
+
+// ─── BROWSE ───
+function bannerBg(c){
+  var m={Programming:'#e8f4e8',Design:'#f4e8f4',Math:'#e8eef4',Language:'#f4f0e8',Music:'#f4e8e8',Business:'#fff3e8'};
+  return m[c]||'#f0f0f0';
+}
+function renderClasses(list){
+  var g=document.getElementById('class-grid');
+  if(!list.length){g.innerHTML='<div style="color:var(--ink3);padding:32px 0;font-size:15px;">No classes found.</div>';return;}
+  g.innerHTML=list.map(function(c){
+    return '<div class="class-card" onclick="clickClass(\''+c.id+'\')">'+
+      '<div class="card-banner" style="background:'+bannerBg(c.category)+'"><span style="font-size:52px">'+c.emoji+'</span>'+
+      (c.live?'<div class="card-live-badge"><span class="card-live-dot"></span>LIVE NOW</div>':'<div class="card-scheduled-badge">UPCOMING</div>')+
+      '</div><div class="card-body">'+
+      '<div class="card-category">'+c.category+'</div>'+
+      '<div class="card-title">'+c.title+'</div>'+
+      '<div class="card-teacher"><div class="teacher-av">'+c.teacher.charAt(0)+'</div>'+c.teacher+'</div>'+
+      '<div class="card-footer"><div class="card-price">$'+c.price+'<span>/session</span></div>'+
+      '<button class="join-btn'+(c.live?' live':'')+'" onclick="event.stopPropagation();clickClass(\''+c.id+'\')">'+
+      (c.live?'Join Now':'Enroll')+'</button></div></div></div>';
+  }).join('');
+}
+function filterClasses(){
+  var q=document.getElementById('search-input').value.toLowerCase();
+  var list=CLASSES;
+  if(activeFilter!=='all') list=list.filter(function(c){return c.category===activeFilter;});
+  if(q) list=list.filter(function(c){return (c.title+c.teacher+c.category).toLowerCase().includes(q);});
+  renderClasses(list);
+}
+function setFilter(f,el){
+  activeFilter=f;
+  document.querySelectorAll('.filter-chip').forEach(function(c){c.classList.remove('active');});
+  el.classList.add('active');filterClasses();
+}
+renderClasses(CLASSES);
+
+// Auto-join from URL param
+(function(){
+  var r=new URLSearchParams(window.location.search).get('room');
+  if(!r) return;
+  var m=CLASSES.find(function(c){return c.id===r;});
+  setTimeout(function(){
+    if(m){clickClass(m.id);}
+    else{
+      pendingClass={id:r,title:'Live Class',teacher:'Host',emoji:'🎓',price:0};
+      document.getElementById('pay-class-emoji').textContent='🎓';
+      document.getElementById('pay-class-title').textContent='Live Class';
+      document.getElementById('pay-class-teacher').textContent='Room: '+r;
+      document.getElementById('pay-amount-display').textContent='Free';
+      document.getElementById('pay-btn').textContent='Join Class';
+      document.getElementById('pay-status').textContent='';
+      document.getElementById('s-name').value='';
+      showModal('pay-modal');
+    }
+  },300);
+})();
+
+// ─── CLICK / PAY ───
+function clickClass(id){
+  var c=CLASSES.find(function(x){return x.id===id;});if(!c)return;
+  pendingClass=c;
+  document.getElementById('pay-class-emoji').textContent=c.emoji;
+  document.getElementById('pay-class-title').textContent=c.title;
+  document.getElementById('pay-class-teacher').textContent='by '+c.teacher;
+  document.getElementById('pay-amount-display').textContent='$'+c.price;
+  document.getElementById('pay-btn').textContent='Pay $'+c.price+' & Join Class';
+  document.getElementById('pay-status').textContent='';
+  document.getElementById('s-name').value='';
+  showModal('pay-modal');
+}
+function formatCard(el){
+  var v=el.value.replace(/\D/g,'').slice(0,16);
+  el.value=v.replace(/(.{4})/g,'$1 ').trim();
+  document.getElementById('card-num-display').textContent=v.replace(/(.{4})/g,'$1 ').trim()||'•••• •••• •••• ••••';
+}
+function processPayment(){
+  var sName=document.getElementById('s-name').value.trim();
+  if(!sName){setPayStatus('Please enter your name');return;}
+  var isFree=!pendingClass.price;
+  if(!isFree){
+    if(document.getElementById('cc-num').value.replace(/\s/g,'').length<12){setPayStatus('Enter a valid card number');return;}
+    if(!document.getElementById('cc-exp').value){setPayStatus('Enter expiry date');return;}
+    if(!document.getElementById('cc-cvc').value){setPayStatus('Enter CVC');return;}
+  }
+  var btn=document.getElementById('pay-btn');
+  btn.innerHTML='<span class="spinner"></span> '+(isFree?'Joining…':'Processing…');
+  btn.disabled=true;setPayStatus('');
+  setTimeout(function(){
+    if(!isFree){btn.innerHTML='✓ Payment Successful!';btn.style.background='#00a878';}
+    setPayStatus('Entering classroom…');
+    setTimeout(function(){
+      closeModal('pay-modal');
+      btn.innerHTML=isFree?'Join Class':'Pay $'+pendingClass.price+' & Join Class';
+      btn.style.background='';btn.disabled=false;
+      myName=sName;isTeacher=false;classTitle=pendingClass.title;
+      enterClassroom();
+    },900);
+  },isFree?400:1800);
+}
+function setPayStatus(m){document.getElementById('pay-status').textContent=m;}
+
+// ─── CREATE CLASS ───
+function createClass(){
+  var name=document.getElementById('t-name').value.trim();
+  var title=document.getElementById('t-title').value.trim();
+  if(!name){showToast('Enter your name');return;}
+  if(!title){showToast('Enter a class title');return;}
+  var roomId=Math.random().toString(36).slice(2,8).toUpperCase();
+  var nc={id:roomId,title:title,teacher:name,category:document.getElementById('t-cat').value,
+    emoji:document.getElementById('t-emoji').value||'📚',
+    price:parseFloat(document.getElementById('t-price').value)||10,live:true};
+  CLASSES.unshift(nc);filterClasses();
+  closeModal('teach-modal');showToast('Class created! Going live…');
+  myName=name;isTeacher=true;classTitle=title;pendingClass=nc;
+  setTimeout(enterClassroom,600);
+}
+
+// ─── WEBRTC ───
+var myPeer=null,localStream=null,crMicOn=true,crCamOn=true,crChatOpen=true,crUnread=0;
+var crPeers={},hubPeer=null,hubConn=null,hubConns=[],roomCode='';
+var PCFG={debug:0,config:{iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:stun2.l.google.com:19302'},{urls:'stun:stun3.l.google.com:19302'}
+]}};
+function hid(c){return 'tl-hub-'+c.toLowerCase();}
+
+async function enterClassroom(){
+  roomCode=pendingClass.id;
+  var url=new URL(window.location.href);url.searchParams.set('room',roomCode);
+  window.history.replaceState({},'',url.toString());
+  document.getElementById('cr-title').textContent=classTitle;
+  document.getElementById('cr-count').textContent='1 participant';
+  document.getElementById('cr-role-badge').textContent=isTeacher?'🎓 Teacher':'👤 Student';
+  document.getElementById('classroom-screen').classList.add('show');
+  try{localStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640},height:{ideal:480},frameRate:{ideal:24}},audio:{echoCancellation:true,noiseSuppression:true}});}
+  catch(e){try{localStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});crCamOn=false;}
+  catch(e2){localStream=new MediaStream();crCamOn=false;crMicOn=false;crAddSys('No camera/mic available.');}}
+  localStream.getAudioTracks().forEach(function(t){t.enabled=crMicOn;});
+  localStream.getVideoTracks().forEach(function(t){t.enabled=crCamOn;});
+  renderLocalTile();
+  crAddSys('You joined "'+classTitle+'"');
+  crAddSys('Share: '+url.toString());
+  myPeer=new Peer(PCFG);
+  myPeer.on('error',function(e){if(e.type==='network')crAddSys('Network issue…');});
+  myPeer.on('open',function(){tryHub();});
+  myPeer.on('call',function(call){call.answer(localStream||new MediaStream());crHandleCall(call,call.peer);});
+  myPeer.on('connection',function(conn){crSetupIn(conn);});
+}
+
+function tryHub(){
+  hubPeer=new Peer(hid(roomCode),PCFG);
+  hubPeer.on('error',function(e){if(e.type==='unavailable-id'){hubPeer=null;joinHub();}});
+  hubPeer.on('open',function(){crAddSys('Room is live! Share the link.');hubListen();});
+}
+function hubListen(){
+  hubPeer.on('connection',function(conn){
+    conn.on('open',function(){
+      if(1+Object.keys(crPeers).length>=MAX_ROOM){conn.send({type:'full',max:MAX_ROOM});setTimeout(function(){conn.close();},500);return;}
+      conn.on('data',function(d){
+        if(d.type==='hello'){
+          var members=[{id:myPeer.id,name:myName,teacher:isTeacher}].concat(
+            Object.keys(crPeers).map(function(id){return{id:id,name:(crPeers[id]&&crPeers[id].name)||'Peer',teacher:!!(crPeers[id]&&crPeers[id].teacher)};}));
+          conn.send({type:'members',members:members});
+          hubConns.forEach(function(c){if(c.open)c.send({type:'new_member',id:conn.peer,name:d.name,teacher:d.teacher||false});});
+          crMesh(conn.peer,d.name,d.teacher||false);
+          hubConns.push(conn);
+        }
+        if(d.type==='left')propLeave(conn.peer);
+      });
+      conn.on('close',function(){propLeave(conn.peer);});
+    });
+  });
+}
+function propLeave(pid){
+  hubConns=hubConns.filter(function(c){return c.peer!==pid;});
+  hubConns.forEach(function(c){if(c.open)c.send({type:'member_left',id:pid});});
+  crOnLeft(pid);
+}
+function joinHub(){
+  hubConn=myPeer.connect(hid(roomCode),{reliable:true});
+  hubConn.on('error',function(){crAddSys('Could not reach room.');});
+  hubConn.on('open',function(){hubConn.send({type:'hello',name:myName,teacher:isTeacher});});
+  hubConn.on('data',function(d){
+    if(d.type==='full'){crLeave();showToast('Room full ('+d.max+'/'+d.max+'). Try later.');return;}
+    if(d.type==='members')d.members.forEach(function(m){if(m.id!==myPeer.id)crMesh(m.id,m.name,m.teacher);});
+    if(d.type==='new_member'&&d.id!==myPeer.id)crMesh(d.id,d.name,d.teacher);
+    if(d.type==='member_left')crOnLeft(d.id);
+  });
+  hubConn.on('close',function(){crAddSys('Host left. Room stays active for existing members.');});
+}
+function crMesh(pid,name,teacher){
+  if(crPeers[pid])return;
+  crPeers[pid]={name:name,teacher:teacher,call:null,conn:null,stream:null};
+  var conn=myPeer.connect(pid,{reliable:true});
+  crPeers[pid].conn=conn;
+  conn.on('open',function(){conn.send({type:'hi',name:myName,teacher:isTeacher});});
+  conn.on('data',function(d){crData(pid,d);});
+  conn.on('close',function(){crOnLeft(pid);});
+  setTimeout(function(){
+    if(!crPeers[pid]||!localStream)return;
+    var call=myPeer.call(pid,localStream);
+    if(call){crPeers[pid].call=call;crHandleCall(call,pid);}
+  },500);
+  crAddSys((name||'Someone')+(teacher?' 🎓':'')+' is connecting…');crUpdateCount();
+}
+function crHandleCall(call,pid){
+  if(!crPeers[pid])crPeers[pid]={name:'',teacher:false,call:null,conn:null,stream:null};
+  crPeers[pid].call=call;
+  call.on('stream',function(s){crPeers[pid].stream=s;crRenderRemote(pid,s);crUpdateCount();});
+  call.on('close',function(){crOnLeft(pid);});
+}
+function crSetupIn(conn){
+  var pid=conn.peer;
+  if(!crPeers[pid])crPeers[pid]={name:'',teacher:false,call:null,conn:null,stream:null};
+  if(!crPeers[pid].conn||!crPeers[pid].conn.open)crPeers[pid].conn=conn;
+  conn.on('data',function(d){crData(pid,d);});
+  conn.on('close',function(){crOnLeft(pid);});
+}
+function crData(pid,d){
+  if(d.type==='hi'&&crPeers[pid]){crPeers[pid].name=d.name;crPeers[pid].teacher=d.teacher;}
+  if(d.type==='chat')crReceiveChat(d.name,d.text,d.teacher);
+  if(d.type==='caption')wbReceive(pid,d.name,d.text);
+}
+function crOnLeft(pid){
+  if(!crPeers[pid])return;
+  var n=crPeers[pid].name||'Someone';
+  try{if(crPeers[pid].call)crPeers[pid].call.close();}catch(e){}
+  try{if(crPeers[pid].conn)crPeers[pid].conn.close();}catch(e){}
+  delete crPeers[pid];
+  var t=document.getElementById('crt-'+pid);if(t)t.remove();
+  crAddSys(n+' left');crUpdateCount();
+}
+
+// ─── TILES ───
+function renderLocalTile(){
+  var g=document.getElementById('cr-grid');
+  var tile=document.getElementById('crt-local');
+  if(!tile){tile=document.createElement('div');tile.className='cr-tile'+(isTeacher?' cr-tile-teacher':'');tile.id='crt-local';g.prepend(tile);}
+  tile.innerHTML='';
+  if(crCamOn&&localStream&&localStream.getVideoTracks().some(function(t){return t.readyState==='live';})){
+    var v=document.createElement('video');v.autoplay=true;v.muted=true;v.playsInline=true;v.setAttribute('playsinline','');
+    v.srcObject=localStream;v.onloadedmetadata=function(){v.play().catch(function(){});};tile.appendChild(v);
+  }else{tile.appendChild(mkPlaceholder(myName));}
+  var l=document.createElement('div');l.className='cr-tile-label';
+  l.textContent=myName+(isTeacher?' 🎓':' 👤')+' (You)'+(crMicOn?'':' 🔇');tile.appendChild(l);
+}
+function crRenderRemote(pid,stream){
+  var g=document.getElementById('cr-grid');
+  var tile=document.getElementById('crt-'+pid);
+  if(!tile){tile=document.createElement('div');tile.className='cr-tile'+(crPeers[pid]&&crPeers[pid].teacher?' cr-tile-teacher':'');tile.id='crt-'+pid;g.appendChild(tile);}
+  tile.innerHTML='';
+  var hasV=stream&&stream.getVideoTracks().length>0&&stream.getVideoTracks().some(function(t){return t.readyState==='live'&&t.enabled;});
+  if(hasV){
+    var v=document.createElement('video');v.autoplay=true;v.playsInline=true;v.setAttribute('playsinline','');v.muted=false;
+    v.srcObject=stream;v.onloadedmetadata=function(){v.play().catch(function(){});};tile.appendChild(v);
+  }else{tile.appendChild(mkPlaceholder((crPeers[pid]&&crPeers[pid].name)||'Peer'));}
+  if(!hasV&&stream&&stream.getAudioTracks().length>0){
+    var a=document.createElement('audio');a.autoplay=true;a.srcObject=stream;
+    a.onloadedmetadata=function(){a.play().catch(function(){});};tile.appendChild(a);
+  }
+  var l=document.createElement('div');l.className='cr-tile-label';
+  l.textContent=((crPeers[pid]&&crPeers[pid].name)||'Peer')+(crPeers[pid]&&crPeers[pid].teacher?' 🎓':'');tile.appendChild(l);
+}
+function mkPlaceholder(name){
+  var d=document.createElement('div');d.className='cam-placeholder';
+  var av=document.createElement('div');av.className='cam-av';av.textContent=(name||'?').charAt(0).toUpperCase();
+  d.appendChild(av);return d;
+}
+
+// ─── CONTROLS ───
+function crToggleMic(){
+  crMicOn=!crMicOn;if(localStream)localStream.getAudioTracks().forEach(function(t){t.enabled=crMicOn;});
+  var b=document.getElementById('cr-mic-btn');b.className='cr-btn'+(crMicOn?'':' off');
+  b.innerHTML=(crMicOn?'🎤':'🔇')+'<span class="tip">'+(crMicOn?'Mute':'Unmute')+'</span>';renderLocalTile();
+}
+function crToggleCam(){
+  crCamOn=!crCamOn;if(localStream)localStream.getVideoTracks().forEach(function(t){t.enabled=crCamOn;});
+  var b=document.getElementById('cr-cam-btn');b.className='cr-btn'+(crCamOn?'':' off');
+  b.innerHTML=(crCamOn?'📷':'🚫')+'<span class="tip">'+(crCamOn?'Cam off':'Cam on')+'</span>';renderLocalTile();
+}
+function crLeave(){
+  if(captionsOn)wbStop();
+  if(hubConn&&hubConn.open)try{hubConn.send({type:'left'});}catch(e){}
+  [hubConn,hubPeer,myPeer].forEach(function(x){if(x)try{x.close?x.close():x.destroy();}catch(e){}});
+  if(localStream)localStream.getTracks().forEach(function(t){t.stop();});
+  document.getElementById('classroom-screen').classList.remove('show');
+  document.getElementById('cr-grid').innerHTML='';
+  document.getElementById('cr-msgs').innerHTML='';
+  Object.keys(crPeers).forEach(function(k){delete crPeers[k];});
+  myPeer=null;localStream=null;hubPeer=null;hubConn=null;hubConns=[];
+  var url=new URL(window.location.href);url.searchParams.delete('room');window.history.replaceState({},'',url.toString());
+  showToast('Left the class');
+}
+function crToggleChat(){
+  crChatOpen=!crChatOpen;
+  document.getElementById('cr-chat-panel').classList.toggle('collapsed',!crChatOpen);
+  if(crChatOpen){crUnread=0;document.getElementById('cr-unread').style.display='none';}
+}
+function crToggleWhiteboard(){document.getElementById('wb-panel').classList.toggle('open');}
+function crChatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();crSend();}}
+function crSend(){
+  var i=document.getElementById('cr-input'),t=i.value.trim();if(!t)return;i.value='';
+  crAppendMsg(myName,t,isTeacher,true);
+  crBroadcast({type:'chat',name:myName,text:t,teacher:isTeacher});
+}
+function crReceiveChat(name,text,teacher){
+  crAppendMsg(name,text,teacher,false);
+  if(!crChatOpen){crUnread++;var b=document.getElementById('cr-unread');b.style.display='flex';b.textContent=crUnread>9?'9+':crUnread;}
+}
+function crAppendMsg(name,text,teacher){
+  var c=document.getElementById('cr-msgs'),d=document.createElement('div');d.className='cr-msg';
+  var nm=document.createElement('div');nm.className='cr-msg-name'+(teacher?' teacher':'');nm.textContent=name+(teacher?' (teacher)':'');
+  var tx=document.createElement('div');tx.className='cr-msg-text';tx.textContent=text;
+  d.append(nm,tx);c.appendChild(d);c.scrollTop=c.scrollHeight;
+}
+function crAddSys(text){
+  var c=document.getElementById('cr-msgs'),d=document.createElement('div');d.className='cr-msg sys';
+  var tx=document.createElement('div');tx.className='cr-msg-text';tx.textContent=text;
+  d.appendChild(tx);c.appendChild(d);c.scrollTop=c.scrollHeight;
+}
+function crBroadcast(data){Object.values(crPeers).forEach(function(p){if(p.conn&&p.conn.open)try{p.conn.send(data);}catch(e){}});}
+function crUpdateCount(){var n=1+Object.keys(crPeers).length;document.getElementById('cr-count').textContent=n+(n===1?' participant':' participants');}
+
+// ─── WHITEBOARD / LIVE Q&A ───
+// User speaks → question shown → AI answer generated below it → broadcast to all peers
+var captionsOn=false,recognition=null,recRestart=false,wbIntEl=null;
+var spkClr={},spkI=0;
+function wbClr(k){if(!(k in spkClr)){spkClr[k]=spkI++%5;}return 'spk-'+spkClr[k];}
+
+// MUST be synchronous onclick — Android Chrome blocks SR if called from async
+function wbToggle(){
+  if(captionsOn){wbStop();return;}
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){wbSys('Captions need Chrome or Edge browser. Firefox/Safari not supported.');return;}
+  captionsOn=true;recRestart=false;
+  document.getElementById('wb-dot').classList.remove('off');
+  var btn=document.getElementById('wb-btn');btn.textContent='⏹ Stop Listening';btn.classList.add('active');
+  // Open whiteboard automatically
+  document.getElementById('wb-panel').classList.add('open');
+  wbSys('Listening… speak your question now.');
+  wbLaunch(SR);
+}
+function wbLaunch(SR){
+  if(!captionsOn)return;
+  if(recognition)try{recognition.abort();}catch(e){}
+  recognition=new SR();
+  recognition.continuous=false;
+  recognition.interimResults=true;
+  recognition.lang='en-US';
+  recognition.onstart=function(){recRestart=false;};
+  recognition.onresult=function(e){
+    var interim='',final='';
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      var t=e.results[i][0].transcript;
+      if(e.results[i].isFinal)final+=t; else interim+=t;
+    }
+    if(interim)wbShowInterim(interim);
+    if(final.trim()){
+      wbClearInterim();
+      wbAddQA(myName,final.trim(),true);
+      crBroadcast({type:'caption',name:myName,text:final.trim()});
+    }
+  };
+  recognition.onerror=function(e){
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+      wbSys('Mic blocked. Go to Chrome Settings > Site Settings > Microphone > Allow this site.');
+      wbStop();
+    }
+  };
+  recognition.onend=function(){
+    wbClearInterim();
+    if(captionsOn&&!recRestart){
+      recRestart=true;
+      setTimeout(function(){if(captionsOn)wbLaunch(SR);},300);
+    }
+  };
+  try{recognition.start();}catch(err){setTimeout(function(){if(captionsOn)wbLaunch(SR);},600);}
+}
+function wbStop(){
+  captionsOn=false;recRestart=false;
+  if(recognition)try{recognition.abort();}catch(e){}
+  recognition=null;wbClearInterim();
+  document.getElementById('wb-dot').classList.add('off');
+  var btn=document.getElementById('wb-btn');btn.textContent='🎙 Start Listening';btn.classList.remove('active');
+  wbSys('Stopped.');
+}
+function wbShowInterim(text){
+  var c=document.getElementById('wb-captions');
+  if(!wbIntEl){
+    wbIntEl=document.createElement('div');wbIntEl.id='wb-int';wbIntEl.className='caption-block';
+    wbIntEl.innerHTML='<div class="caption-speaker '+wbClr('__me__')+'">'+esc(myName)+'</div><div class="caption-text interim" id="wb-int-txt"></div>';
+    c.appendChild(wbIntEl);
+  }
+  var t=document.getElementById('wb-int-txt');if(t)t.textContent=text+'…';
+  c.scrollTop=c.scrollHeight;
+}
+function wbClearInterim(){if(wbIntEl){wbIntEl.remove();wbIntEl=null;}}
+
+// Add a Q+A block with AI answer
+function wbAddQA(name,question,isMe){
+  var c=document.getElementById('wb-captions');
+  var ph=c.querySelector('.wb-placeholder');if(ph)ph.remove();
+  var aid='ans-'+Date.now()+'-'+Math.random().toString(36).slice(2,5);
+  var spkKey=isMe?'__me__':name;
+  var block=document.createElement('div');block.className='caption-block';
+  block.innerHTML=
+    '<div class="caption-q-label">Question</div>'+
+    '<div class="caption-speaker '+wbClr(spkKey)+'">'+esc(name)+'</div>'+
+    '<div class="caption-text">'+esc(question)+'</div>'+
+    '<div class="caption-answer" id="'+aid+'">'+
+      '<div class="caption-answer-label">AI Answer</div>'+
+      '<div class="caption-answer-text caption-answer-loading">Thinking…</div>'+
+    '</div>';
+  c.appendChild(block);c.scrollTop=c.scrollHeight;
+  // Call Claude API asynchronously — answer streams in via typewriter effect
+  wbAnswer(question, aid, c);
+}
+function wbReceive(pid,name,text){wbAddQA(name,text,false);}
+function wbSys(text){
+  var c=document.getElementById('wb-captions');
+  var ph=c.querySelector('.wb-placeholder');if(ph)ph.remove();
+  var el=document.createElement('div');el.className='caption-block';
+  el.innerHTML='<div class="caption-text" style="color:#7a8099;font-size:12px;background:transparent;padding:4px 0;">'+esc(text)+'</div>';
+  c.appendChild(el);c.scrollTop=c.scrollHeight;
+}
+function wbClear(){
+  document.getElementById('wb-captions').innerHTML='<div class="wb-placeholder" style="text-align:center;color:#555;font-size:13px;padding:40px 16px;">Board cleared.</div>';
+  wbIntEl=null;
+}
+
+// ─── GEMINI AI ANSWER ENGINE ───
+// Sends spoken question to Google Gemini API and streams the answer back.
+// Context-aware: keeps last 6 turns so follow-up questions work naturally.
+// Uses gemini-1.5-flash — fast, free tier available, great quality.
+
+var GEMINI_API_KEY = '';
+var wbHistory = [];  // [{role:'user',parts:[{text:'...'}]},{role:'model',parts:[{text:'...'}]}]
+var MAX_HISTORY = 6;
+
+var GEMINI_SYSTEM = 'You are an expert teaching assistant inside a live video classroom. ' +
+  'When a student or teacher asks a question, give a clear, detailed, interview-quality answer. ' +
+  'Structure your answer like a great teacher: explain the concept, give a real-world example, mention trade-offs or common mistakes. ' +
+  'Keep answers thorough but focused — minimum 4 sentences. ' +
+  'If the question is a follow-up to a previous answer, continue naturally from that context. ' +
+  'Use plain text only — no markdown symbols, no asterisks, no bullet points.';
+
+async function wbAnswer(question, answerId, container) {
+  var el = document.getElementById(answerId);
+  if (!el) return;
+  var textEl = el.querySelector('.caption-answer-text');
+
+  if (!GEMINI_API_KEY) {
+    textEl.textContent = 'No API key set. Paste your Gemini API key in the field below the Q&A board.';
+    textEl.classList.remove('caption-answer-loading');
+    return;
+  }
+
+  textEl.textContent = '';
+  textEl.classList.remove('caption-answer-loading');
+
+  // Add user message to history
+  wbHistory.push({ role: 'user', parts: [{ text: question }] });
+  if (wbHistory.length > MAX_HISTORY) wbHistory = wbHistory.slice(-MAX_HISTORY);
+
   var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=' + GEMINI_API_KEY;
 
   var body = {
