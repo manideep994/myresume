@@ -287,7 +287,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px
       <span class="key-dot" id="key-dot"></span>
       <span>API Key</span>
     </button>
-    <select class="model-select" onchange="onModelChange(this.value)"><option value="0" selected>Gemini 2.5 Flash</option><option value="1">Gemini 2.5 Pro</option><option value="2">Gemini 2.0 Flash</option><option value="3">Gemini 2.0 Lite</option><option value="4">Gemini 1.5 Flash</option></select>
+    <select class="model-select" onchange="onModelChange(this.value)"><option value="0" selected>Gemini 2.5 Flash</option><option value="1">Gemini 2.5 Pro</option><option value="2">Gemini 2.0 Flash</option><option value="3">Gemini 2.0 Flash Lite</option><option value="4">Gemini Flash Latest</option><option value="5">Gemini Flash Lite Latest</option><option value="6">Gemini Pro Latest</option><option value="7">Gemini 3 Flash Preview</option><option value="8">Gemini 3 Pro Preview</option><option value="9">Gemini 3.1 Flash Lite</option><option value="10">Gemini 3.1 Pro Preview</option><option value="11">Gemma 4 31B</option><option value="12">Gemma 4 26B</option><option value="13">Gemma 3 27B</option><option value="14">Gemma 3 12B</option><option value="15">Gemma 3 4B</option><option value="16">Gemma 3 1B</option></select>
     <button class="nav-btn nav-btn-ghost" onclick="showModal('teach-modal')">Teach a class</button>
     <button class="nav-btn nav-btn-accent" onclick="showModal('teach-modal')">Get Started</button>
   </div>
@@ -394,7 +394,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px
     <div style="display:flex;align-items:center;gap:12px;">
       <span class="cr-badge">● LIVE</span>
       <span id="cr-count" style="font-size:12px;color:#7a8099;"></span>
-      <select class="model-select-dark" onchange="onModelChange(this.value)"><option value="0" selected>Gemini 2.5 Flash</option><option value="1">Gemini 2.5 Pro</option><option value="2">Gemini 2.0 Flash</option><option value="3">Gemini 2.0 Lite</option><option value="4">Gemini 1.5 Flash</option></select>
+      <select class="model-select-dark" onchange="onModelChange(this.value)"><option value="0" selected>Gemini 2.5 Flash</option><option value="1">Gemini 2.5 Pro</option><option value="2">Gemini 2.0 Flash</option><option value="3">Gemini 2.0 Flash Lite</option><option value="4">Gemini Flash Latest</option><option value="5">Gemini Flash Lite Latest</option><option value="6">Gemini Pro Latest</option><option value="7">Gemini 3 Flash Preview</option><option value="8">Gemini 3 Pro Preview</option><option value="9">Gemini 3.1 Flash Lite</option><option value="10">Gemini 3.1 Pro Preview</option><option value="11">Gemma 4 31B</option><option value="12">Gemma 4 26B</option><option value="13">Gemma 3 27B</option><option value="14">Gemma 3 12B</option><option value="15">Gemma 3 4B</option><option value="16">Gemma 3 1B</option></select>
     </div>
   </div>
   <div class="cr-main">
@@ -452,7 +452,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px
       <span class="ai-head-title">AI Interview Assistant</span>
     </div>
     <div class="ai-head-right">
-      <select class="model-select-dark" onchange="onModelChange(this.value)"><option value="0" selected>Gemini 2.5 Flash</option><option value="1">Gemini 2.5 Pro</option><option value="2">Gemini 2.0 Flash</option><option value="3">Gemini 2.0 Lite</option><option value="4">Gemini 1.5 Flash</option></select>
+      <select class="model-select-dark" onchange="onModelChange(this.value)"><option value="0" selected>Gemini 2.5 Flash</option><option value="1">Gemini 2.5 Pro</option><option value="2">Gemini 2.0 Flash</option><option value="3">Gemini 2.0 Flash Lite</option><option value="4">Gemini Flash Latest</option><option value="5">Gemini Flash Lite Latest</option><option value="6">Gemini Pro Latest</option><option value="7">Gemini 3 Flash Preview</option><option value="8">Gemini 3 Pro Preview</option><option value="9">Gemini 3.1 Flash Lite</option><option value="10">Gemini 3.1 Pro Preview</option><option value="11">Gemma 4 31B</option><option value="12">Gemma 4 26B</option><option value="13">Gemma 3 27B</option><option value="14">Gemma 3 12B</option><option value="15">Gemma 3 4B</option><option value="16">Gemma 3 1B</option></select>
       <button class="ai-close" onclick="aiToggle()">✕</button>
     </div>
   </div>
@@ -479,11 +479,23 @@ Tap the mic to speak, or type below.</div>
 // MODELS — auto-switch on rate limit
 // ═══════════════════════════════════════
 var MODELS = [
-  {id:'gemini-2.5-flash',     label:'Gemini 2.5 Flash'},
-  {id:'gemini-2.5-pro',       label:'Gemini 2.5 Pro'},
-  {id:'gemini-2.0-flash',     label:'Gemini 2.0 Flash'},
-  {id:'gemini-2.0-flash-lite',label:'Gemini 2.0 Flash Lite'},
-  {id:'gemini-1.5-flash',     label:'Gemini 1.5 Flash'},
+  {id:'gemini-2.5-flash',          label:'Gemini 2.5 Flash'},
+  {id:'gemini-2.5-pro',            label:'Gemini 2.5 Pro'},
+  {id:'gemini-2.0-flash',          label:'Gemini 2.0 Flash'},
+  {id:'gemini-2.0-flash-lite',     label:'Gemini 2.0 Flash Lite'},
+  {id:'gemini-flash-latest',       label:'Gemini Flash Latest'},
+  {id:'gemini-flash-lite-latest',  label:'Gemini Flash Lite Latest'},
+  {id:'gemini-pro-latest',         label:'Gemini Pro Latest'},
+  {id:'gemini-3-flash-preview',    label:'Gemini 3 Flash Preview'},
+  {id:'gemini-3-pro-preview',      label:'Gemini 3 Pro Preview'},
+  {id:'gemini-3.1-flash-lite-preview', label:'Gemini 3.1 Flash Lite'},
+  {id:'gemini-3.1-pro-preview',    label:'Gemini 3.1 Pro Preview'},
+  {id:'gemma-4-31b-it',            label:'Gemma 4 31B'},
+  {id:'gemma-4-26b-a4b-it',        label:'Gemma 4 26B'},
+  {id:'gemma-3-27b-it',            label:'Gemma 3 27B'},
+  {id:'gemma-3-12b-it',            label:'Gemma 3 12B'},
+  {id:'gemma-3-4b-it',             label:'Gemma 3 4B'},
+  {id:'gemma-3-1b-it',             label:'Gemma 3 1B'},
 ];
 var currentModelIdx = 0;
 var GEMINI_KEY = '';
@@ -508,42 +520,66 @@ function updateModelUI(){
   if(ind) ind.textContent = MODELS[currentModelIdx].label;
 }
 
-// Call Gemini — auto-switches model on rate limit, retries once
+// Call Gemini/Gemma — auto-switches on rate limit, tries all models
 async function callGemini(prompt, systemPrompt, maxTokens){
   if(!GEMINI_KEY) return {error:'No API key. Set it using the API Key button.'};
 
-  for(var attempt=0; attempt<MODELS.length; attempt++){
+  var tried = 0;
+  var startIdx = currentModelIdx;
+
+  while(tried < MODELS.length){
     var model = MODELS[currentModelIdx].id;
     var url = 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+GEMINI_KEY;
+    console.log('Trying model:', model);
+
     try{
+      var body = {
+        contents:[{role:'user',parts:[{text:prompt}]}],
+        generationConfig:{maxOutputTokens:maxTokens||400,temperature:0.7}
+      };
+      // Gemma models dont support system_instruction — only add for Gemini
+      if(model.indexOf('gemini')!==-1){
+        body.system_instruction = {parts:[{text:systemPrompt}]};
+      } else {
+        // For Gemma, prepend system prompt to user message
+        body.contents[0].parts[0].text = systemPrompt + ' ' + prompt;
+      }
+
       var resp = await fetch(url, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          system_instruction:{parts:[{text:systemPrompt}]},
-          contents:[{role:'user',parts:[{text:prompt}]}],
-          generationConfig:{maxOutputTokens:maxTokens||400,temperature:0.7}
-        })
+        body: JSON.stringify(body)
       });
       var data = await resp.json();
+
       if(!resp.ok){
-        var msg = (data.error&&data.error.message)||'';
-        // Rate limit or quota — try next model
-        if(resp.status===429 || msg.toLowerCase().indexOf('quota')!==-1 || msg.toLowerCase().indexOf('rate')!==-1){
-          console.warn('Rate limit on '+model+', switching...');
-          switchModel();
-          continue; // retry with next model
+        var msg = (data.error&&data.error.message)||('Error '+resp.status);
+        var isRateLimit = resp.status===429 || resp.status===503 ||
+          msg.toLowerCase().indexOf('quota')!==-1 ||
+          msg.toLowerCase().indexOf('rate')!==-1 ||
+          msg.toLowerCase().indexOf('limit')!==-1 ||
+          msg.toLowerCase().indexOf('exhausted')!==-1;
+
+        if(isRateLimit){
+          console.warn('Rate limit on '+model+', trying next...');
+          currentModelIdx = (currentModelIdx+1) % MODELS.length;
+          updateModelUI();
+          tried++;
+          continue;
         }
-        return {error: msg||('Error '+resp.status)};
+        return {error: msg};
       }
+
       var text = '';
-      try{ text = data.candidates[0].content.parts[0].text||'No response.'; }catch(e){ text='Could not read response.'; }
+      try{ text = data.candidates[0].content.parts[0].text||'No response.'; }
+      catch(e){ text='Could not read response.'; }
       return {text: text};
+
     }catch(err){
       return {error:'Connection error: '+err.message};
     }
   }
-  return {error:'All models rate limited. Try again in a moment.'};
+  return {error:'All models rate limited. Wait a minute and try again.'};
 }
 
 // ═══════════════════════
