@@ -853,7 +853,7 @@ async function geminiAsk(question,answerId,container){
   var textEl=el.querySelector('.caption-answer-text');
   if(!GEMINI_KEY){textEl.textContent='No API key. Set it in the nav bar (API Key button).';textEl.classList.remove('caption-answer-loading');return;}
   // Each question is independent — no shared history blocking
-  var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+GEMINI_KEY;
+  var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key='+GEMINI_KEY;
   try{
     var resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
