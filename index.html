@@ -2639,7 +2639,7 @@ async function wbAnswer(question, answerId, container) {
   wbHistory.push({ role: 'user', parts: [{ text: question }] });
   if (wbHistory.length > MAX_HISTORY) wbHistory = wbHistory.slice(-MAX_HISTORY);
 
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_API_KEY;
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=' + GEMINI_API_KEY;
 
   var body = {
     system_instruction: { parts: [{ text: GEMINI_SYSTEM }] },
