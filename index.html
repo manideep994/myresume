@@ -759,8 +759,8 @@ function wbToggle(){
   captionsOn=true;recRestart=false;
   document.getElementById('wb-dot').classList.remove('off');
   document.getElementById('wb-panel').classList.add('open');
-  var btn=document.getElementById('wb-btn');btn.textContent='Stop Listening';btn.classList.add('active');
-  wbSys('Listening... speak your question');wbLaunch(SR);
+  var btn=document.getElementById('wb-btn');btn.textContent='⏹ Stop Mic';btn.classList.add('active');
+  wbLaunch(SR);
 }
 function wbLaunch(SR){
   if(!captionsOn)return;
@@ -805,7 +805,18 @@ function wbLaunch(SR){
   try{ recognition.start(); }
   catch(err){ setTimeout(function(){ if(captionsOn) wbLaunch(SR); },400); }
 }
-function wbStop(){captionsOn=false;recRestart=false;if(recognition)try{recognition.abort();}catch(e){}recognition=null;wbClearInterim();document.getElementById('wb-dot').classList.add('off');var btn=document.getElementById('wb-btn');btn.textContent='🎙 Start Listening';btn.classList.remove('active');wbSys('Stopped.');}
+function wbStop(){
+  // ONLY stop listening — do NOT touch any in-progress answers
+  captionsOn=false;recRestart=false;
+  if(recognition)try{recognition.abort();}catch(e){}
+  recognition=null;
+  wbClearInterim();
+  document.getElementById('wb-dot').classList.add('off');
+  var btn=document.getElementById('wb-btn');
+  btn.textContent='🎙 Start Listening';
+  btn.classList.remove('active');
+  // No wbSys message — answers still typing, dont clutter the board
+}
 function wbShowInterim(text){var c=document.getElementById('wb-captions');if(!wbIntEl){wbIntEl=document.createElement('div');wbIntEl.id='wb-int';wbIntEl.className='caption-block';wbIntEl.innerHTML='<div class="caption-speaker '+wbClr('__me__')+'">'+esc(myName)+'</div><div class="caption-text interim" id="wb-int-txt"></div>';c.appendChild(wbIntEl);}var t=document.getElementById('wb-int-txt');if(t)t.textContent=text+'...';c.scrollTop=c.scrollHeight;}
 function wbClearInterim(){if(wbIntEl){wbIntEl.remove();wbIntEl=null;}}
 function wbAddQA(name,question){
@@ -952,10 +963,18 @@ function aiGetAnswer(question){
 }
 
 function aiDone(){
-  aiTyping=false;document.getElementById('ai-send').disabled=false;
-  if(!aiVoiceOn)document.getElementById('ai-ta').focus();
+  aiTyping=false;
+  document.getElementById('ai-send').disabled=false;
   document.getElementById('ai-msgs').scrollTo({top:99999,behavior:'smooth'});
-  if(aiVoiceOn){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(SR){aiSetVS('Listening... speak your next question');setTimeout(function(){if(aiVoiceOn)aiVoiceLaunch(SR);},500);}}
+  if(!aiVoiceOn) document.getElementById('ai-ta').focus();
+  // Only restart mic if voice mode is still ON
+  if(aiVoiceOn){
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(SR){
+      aiSetVS('Listening...');
+      setTimeout(function(){if(aiVoiceOn)aiVoiceLaunch(SR);},400);
+    }
+  }
 }
 
 function aiVoiceToggle(){
@@ -982,7 +1001,16 @@ function aiVoiceLaunch(SR){
   aiVoiceRec.onend=function(){if(aiVoiceOn&&!aiVoiceRestart&&!aiTyping){aiVoiceRestart=true;setTimeout(function(){aiVoiceRestart=false;if(aiVoiceOn&&!aiTyping){aiSetVS('Listening...');aiVoiceLaunch(SR);}},300);}};
   try{aiVoiceRec.start();}catch(err){setTimeout(function(){if(aiVoiceOn)aiVoiceLaunch(SR);},600);}
 }
-function aiVoiceStop(){aiVoiceOn=false;aiVoiceRestart=false;if(aiVoiceRec)try{aiVoiceRec.abort();}catch(e){}aiVoiceRec=null;document.getElementById('ai-vbtn').textContent='🎤';document.getElementById('ai-vbtn').classList.remove('listening');aiSetVS('');}
+function aiVoiceStop(){
+  // Only stop the microphone — do NOT stop any answer currently typing
+  aiVoiceOn=false;aiVoiceRestart=false;
+  if(aiVoiceRec)try{aiVoiceRec.abort();}catch(e){}
+  aiVoiceRec=null;
+  document.getElementById('ai-vbtn').textContent='🎤';
+  document.getElementById('ai-vbtn').classList.remove('listening');
+  aiSetVS('');
+  // aiTyping stays true if an answer is being generated — it will finish on its own
+}
 function aiSetVS(msg){document.getElementById('ai-vstatus').textContent=msg;}
 
 // ═══════════════════════
