@@ -885,7 +885,7 @@ async function geminiAsk(question,answerId,container){
 async function aiAsk(question,bubble,container){
   aiHistory.push({role:'user',parts:[{text:question}]});
   if(aiHistory.length>MAX_HIST)aiHistory=aiHistory.slice(-MAX_HIST);
-  var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+GEMINI_KEY;
+  var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2-flash:generateContent?key='+GEMINI_KEY;
   try{
     var resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system_instruction:{parts:[{text:AI_PROMPT}]},contents:aiHistory.slice(),generationConfig:{maxOutputTokens:600,temperature:0.7}})});
     if(!resp.ok){var err=await resp.json().catch(function(){return{};});bubble.textContent=(err.error&&err.error.message)||('Error '+resp.status);aiDone();return;}
@@ -899,7 +899,7 @@ async function aiAsk(question,bubble,container){
       if(wi<words.length){
         bubble.textContent+=(wi>0?' ':'')+words[wi];wi++;
         container.scrollTo({top:container.scrollHeight,behavior:'smooth'});
-        var w=words[wi-1],delay=22;
+        var w=words[wi-1],delay=2;
         if(w.endsWith('.')||w.endsWith('!')||w.endsWith('?'))delay=180;
         else if(w.endsWith(',')||w.endsWith(';'))delay=80;
         setTimeout(tw,delay);
