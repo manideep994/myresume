@@ -763,18 +763,47 @@ function wbToggle(){
   wbSys('Listening... speak your question');wbLaunch(SR);
 }
 function wbLaunch(SR){
-  if(!captionsOn)return;if(recognition)try{recognition.abort();}catch(e){}
-  recognition=new SR();recognition.continuous=false;recognition.interimResults=true;recognition.lang='en-US';
-  recognition.onstart=function(){recRestart=false;};
+  if(!captionsOn)return;
+  if(recognition)try{recognition.abort();}catch(e){}
+  recognition=new SR();
+  recognition.continuous=false;
+  recognition.interimResults=true;
+  recognition.lang='en-US';
+  recognition.onstart=function(){ recRestart=false; };
   recognition.onresult=function(e){
     var interim='',final='';
-    for(var i=e.resultIndex;i<e.results.length;i++){var t=e.results[i][0].transcript;if(e.results[i].isFinal)final+=t;else interim+=t;}
-    if(interim)wbShowInterim(interim);
-    if(final.trim()){wbClearInterim();wbAddQA(myName,final.trim());crBroadcast({type:'caption',name:myName,text:final.trim()});}
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      var t=e.results[i][0].transcript;
+      if(e.results[i].isFinal) final+=t; else interim+=t;
+    }
+    if(interim) wbShowInterim(interim);
+    if(final.trim()){
+      wbClearInterim();
+      // Each question gets its OWN answer block — no blocking, all run in parallel
+      wbAddQA(myName,final.trim());
+      crBroadcast({type:'caption',name:myName,text:final.trim()});
+    }
   };
-  recognition.onerror=function(e){if(e.error==='not-allowed'||e.error==='service-not-allowed'){wbSys('Mic blocked.');wbStop();}};
-  recognition.onend=function(){wbClearInterim();if(captionsOn&&!recRestart){recRestart=true;setTimeout(function(){recRestart=false;if(captionsOn){wbSys('Listening...');wbLaunch(SR);}},300);}};
-  try{recognition.start();}catch(err){setTimeout(function(){if(captionsOn)wbLaunch(SR);},600);}
+  recognition.onerror=function(e){
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+      wbSys('Mic blocked. Allow mic in Chrome settings.');
+      wbStop();
+    }
+    // no-speech etc — just let onend restart
+  };
+  recognition.onend=function(){
+    wbClearInterim();
+    // Restart immediately — no delay, no gap, always listening
+    if(captionsOn&&!recRestart){
+      recRestart=true;
+      setTimeout(function(){
+        recRestart=false;
+        if(captionsOn) wbLaunch(SR);
+      },200);
+    }
+  };
+  try{ recognition.start(); }
+  catch(err){ setTimeout(function(){ if(captionsOn) wbLaunch(SR); },400); }
 }
 function wbStop(){captionsOn=false;recRestart=false;if(recognition)try{recognition.abort();}catch(e){}recognition=null;wbClearInterim();document.getElementById('wb-dot').classList.add('off');var btn=document.getElementById('wb-btn');btn.textContent='🎙 Start Listening';btn.classList.remove('active');wbSys('Stopped.');}
 function wbShowInterim(text){var c=document.getElementById('wb-captions');if(!wbIntEl){wbIntEl=document.createElement('div');wbIntEl.id='wb-int';wbIntEl.className='caption-block';wbIntEl.innerHTML='<div class="caption-speaker '+wbClr('__me__')+'">'+esc(myName)+'</div><div class="caption-text interim" id="wb-int-txt"></div>';c.appendChild(wbIntEl);}var t=document.getElementById('wb-int-txt');if(t)t.textContent=text+'...';c.scrollTop=c.scrollHeight;}
@@ -812,17 +841,33 @@ async function geminiAsk(question,answerId,container){
   var el=document.getElementById(answerId);if(!el)return;
   var textEl=el.querySelector('.caption-answer-text');
   if(!GEMINI_KEY){textEl.textContent='No API key. Set it in the nav bar (API Key button).';textEl.classList.remove('caption-answer-loading');return;}
-  wbHistory.push({role:'user',parts:[{text:question}]});
-  if(wbHistory.length>MAX_HIST)wbHistory=wbHistory.slice(-MAX_HIST);
+  // Each question is independent — no shared history blocking
   var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+GEMINI_KEY;
   try{
-    var resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system_instruction:{parts:[{text:WB_PROMPT}]},contents:wbHistory.slice(),generationConfig:{maxOutputTokens:500,temperature:0.7}})});
-    if(!resp.ok){var err=await resp.json().catch(function(){return{};});textEl.textContent=(err.error&&err.error.message)||('Error '+resp.status);textEl.classList.remove('caption-answer-loading');return;}
+    var resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        system_instruction:{parts:[{text:WB_PROMPT}]},
+        contents:[{role:'user',parts:[{text:question}]}],
+        generationConfig:{maxOutputTokens:400,temperature:0.7}
+      })
+    });
+    if(!resp.ok){
+      var err=await resp.json().catch(function(){return{};});
+      textEl.textContent=(err.error&&err.error.message)||('Error '+resp.status);
+      textEl.classList.remove('caption-answer-loading');return;
+    }
     var data=await resp.json();var answer='';
     try{answer=data.candidates[0].content.parts[0].text||'No response.';}catch(e){answer='Could not read response.';}
-    wbHistory.push({role:'model',parts:[{text:answer}]});if(wbHistory.length>MAX_HIST)wbHistory=wbHistory.slice(-MAX_HIST);
     textEl.textContent='';textEl.classList.remove('caption-answer-loading');
-    var i=0;function type(){if(i<answer.length){textEl.textContent+=answer[i++];container.scrollTop=container.scrollHeight;setTimeout(type,10);}}type();
+    // Typewriter — uses closure so multiple answers type simultaneously without conflict
+    var i=0;
+    (function typeIt(){
+      if(i<answer.length){
+        textEl.textContent+=answer[i++];
+        container.scrollTop=container.scrollHeight;
+        setTimeout(typeIt,10);
+      }
+    })();
   }catch(err){textEl.textContent='Error: '+err.message;textEl.classList.remove('caption-answer-loading');}
 }
 
