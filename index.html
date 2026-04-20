@@ -535,7 +535,7 @@ async function callGemini(prompt, systemPrompt, maxTokens){
     try{
       var body = {
         contents:[{role:'user',parts:[{text:prompt}]}],
-        generationConfig:{maxOutputTokens:maxTokens||400,temperature:0.7}
+        generationConfig:{maxOutputTokens:maxTokens||1500,temperature:0.7}
       };
       // Gemma models dont support system_instruction — only add for Gemini
       if(model.indexOf('gemini')!==-1){
@@ -856,7 +856,7 @@ function crUpdateCount(){var n=1+Object.keys(crPeers).length;document.getElement
 var captionsOn=false,recognition=null,recRestart=false,wbIntEl=null;
 var spkClr={},spkI=0;
 function wbClr(k){if(!(k in spkClr)){spkClr[k]=spkI++%5;}return 'spk-'+spkClr[k];}
-var WB_PROMPT='You are an expert teaching assistant. Answer questions clearly with bullet points and examples. If asked for code write it. Keep answers focused.';
+var WB_PROMPT='You are an expert senior software engineer and teacher answering live classroom questions. Give COMPLETE, detailed answers. Never cut off. Structure every answer as: [Definition]: One clear sentence defining the concept. [Explanation]: 2-3 paragraphs explaining how it works in depth. [Example]: A real practical example with actual code if relevant. [Key Points]: 3-5 important things to remember. Always complete your full answer. Never give one-liners.';
 
 function wbToggle(){
   if(captionsOn){wbStop();return;}
@@ -930,7 +930,7 @@ function wbReceive(pid,name,text){
 async function wbGeminiAsk(question,answerId,container){
   var el=document.getElementById(answerId);if(!el)return;
   var textEl=el.querySelector('.caption-answer-text');
-  var result=await callGemini(question,WB_PROMPT,400);
+  var result=await callGemini(question,WB_PROMPT,1500);
   if(result.error){textEl.textContent=result.error;textEl.classList.remove('caption-answer-loading');return;}
   var answer=result.text;
   textEl.textContent='';textEl.classList.remove('caption-answer-loading');
@@ -946,7 +946,7 @@ function wbClearAll(){wbClearInterim();document.getElementById('wb-captions').in
 // ═══════════════════════════════════════
 // AI FULLSCREEN — parallel generation
 // ═══════════════════════════════════════
-var AI_PROMPT='You are an expert AI interview coach. Answer from a strong candidate perspective. Structure: 1) One-line definition. 2) Key points with bullet points. 3) Real example. 4) Code if asked. 5) Interview Tip at end. Plain text only.';
+var AI_PROMPT='You are a senior software engineer being interviewed at a top tech company like Google or Amazon. Answer every question exactly as a strong, confident candidate would in a real technical interview. IMPORTANT: Always give COMPLETE answers, never cut off or summarise too briefly. Structure every answer: Start by clearly defining the concept in 1-2 sentences. Then explain in depth how it works with 2-3 detailed paragraphs. Then give a concrete real-world example. If the question involves coding, write full working code with comments. Mention trade-offs and edge cases. End by saying what interviewers specifically look for when asking this question. Be thorough, technical, and specific. Never give vague or one-line answers.';
 var aiOpen=false,aiVoiceOn=false,aiVoiceRec=null,aiVoiceRestart=false;
 
 function aiToggle(){
@@ -988,7 +988,7 @@ async function aiGetAnswer(question){
   d.append(nm,bubble);c.appendChild(d);
   c.scrollTo({top:c.scrollHeight,behavior:'smooth'});
 
-  var result=await callGemini(question,AI_PROMPT,600);
+  var result=await callGemini(question,AI_PROMPT,1500);
   if(result.error){bubble.textContent=result.error;return;}
   var answer=result.text;
 
