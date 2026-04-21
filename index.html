@@ -343,16 +343,7 @@ textarea { resize: vertical; min-height: 130px; line-height: 1.6; margin-bottom:
   </div>
 </div>
 
-<!-- SETUP (recruiter, first visit) -->
-<div id="setup-panel">
-  <div class="setup-card">
-    <h2>One-time Setup ⚡</h2>
-    <p>This chat is powered by Claude AI.<br>Enter your Anthropic API key — stored <strong>only in your browser</strong>, never sent anywhere else.</p>
-    <input type="password" id="api-inp" placeholder="sk-ant-..." autocomplete="off">
-    <button class="btn-full" onclick="saveKey()">Start Chatting →</button>
-    <div class="fnote">Get a free key at <strong>console.anthropic.com</strong></div>
-  </div>
-</div>
+
 
 <!-- ERROR -->
 <div id="error-panel">
@@ -390,7 +381,8 @@ textarea { resize: vertical; min-height: 130px; line-height: 1.6; margin-bottom:
 
 <script>
 const SK = 'resumechat_v2';
-const AK = 'resumechat_apikey';
+const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY_HERE'; // 🔑 Paste your Gemini API key here
+const GEMINI_MODEL = 'gemini-2.0-flash';
 const $ = id => document.getElementById(id);
 const param = n => new URLSearchParams(location.search).get(n);
 
@@ -422,13 +414,7 @@ if (!slug) {
   if (!resume) {
     $('error-panel').classList.add('active');
   } else {
-    const key = localStorage.getItem(AK);
-    if (!key) {
-      $('setup-panel').classList.add('active');
-      $('api-inp').addEventListener('keydown', e => { if(e.key==='Enter') saveKey(); });
-    } else {
-      initChat(resume, key);
-    }
+    initChat(resume);
   }
 }
 
@@ -486,23 +472,16 @@ function renderList() {
     </div>`).join('');
 }
 
-/* ── SETUP ── */
-function saveKey() {
-  const v = $('api-inp').value.trim();
-  if (!v.startsWith('sk-')) return alert('Invalid key — should start with sk-');
-  localStorage.setItem(AK, v); location.reload();
-}
-
 /* ── CHAT ── */
 let CS = null;
 
-function initChat(resume, apiKey) {
+function initChat(resume) {
   document.title = `Chat with ${resume.name}`;
   $('c-name').textContent = resume.name;
   $('c-role').textContent = resume.title;
   $('chat-panel').classList.add('active');
   $('cinput').placeholder = `Ask anything about ${resume.name}…`;
-  CS = { resume, apiKey, history:[], busy:false };
+  CS = { resume, history:[], busy:false };
   addMsg('ai', `Hi! I'm **${resume.name}**'s AI assistant. Ask me anything about their background and qualifications for the **${resume.title}** role.`);
 }
 
@@ -537,7 +516,7 @@ async function send() {
   $('chips').style.display='none';
   inp.value=''; inp.style.height='auto';
   addMsg('user',text);
-  CS.history.push({role:'user',content:text});
+  CS.history.push({role:'user', parts:[{text}]});
   CS.busy=true; $('csend').disabled=true;
   const tm = addMsg('ai','',true);
   try {
@@ -548,34 +527,24 @@ Answer ONLY from the resume below. Speak in first person as ${CS.resume.name} (e
 RESUME:
 ${CS.resume.resume}`;
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': CS.apiKey,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:700,
-        system:sys,
-        messages:CS.history
-      })
-    });
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: sys }] },
+          contents: CS.history
+        })
+      }
+    );
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
-    const reply = data.content?.[0]?.text || "Sorry, I couldn't generate a response.";
-    CS.history.push({role:'assistant',content:reply});
-    tm.remove(); addMsg('ai',reply);
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
+    CS.history.push({ role:'model', parts:[{text: reply}] });
+    tm.remove(); addMsg('ai', reply);
   } catch(err) {
     tm.remove();
-    if (err.message.includes('401')||err.message.includes('invalid')) {
-      localStorage.removeItem(AK);
-      addMsg('ai','API key invalid. Reloading to re-enter…');
-      setTimeout(()=>location.reload(),2000);
-      return;
-    }
     addMsg('ai','Error: '+err.message);
   } finally {
     CS.busy=false; $('csend').disabled=false; inp.focus();
