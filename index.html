@@ -248,30 +248,6 @@ textarea { resize: vertical; min-height: 130px; line-height: 1.6; margin-bottom:
 #csend:hover { background: #58eed9; transform: scale(1.04); }
 #csend:disabled { background: var(--border); color: var(--muted); transform: none; cursor: not-allowed; }
 
-/* ─── SETUP ─── */
-#setup-panel {
-  display: none; height: 100vh; align-items: center;
-  justify-content: center; padding: 40px 24px;
-}
-#setup-panel.active { display: flex; }
-
-.setup-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 20px; padding: 40px 36px; max-width: 420px; width: 100%;
-  text-align: center; position: relative; z-index: 1;
-}
-.setup-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
-.setup-card p { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 12px; margin-bottom: 22px; line-height: 1.7; }
-.setup-card input { width: 100%; margin-bottom: 12px; background: var(--bg); }
-.btn-full {
-  width: 100%; padding: 13px; background: var(--accent); color: var(--bg);
-  border: none; border-radius: 10px;
-  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px;
-  cursor: pointer; transition: background 0.18s;
-}
-.btn-full:hover { background: #58eed9; }
-.fnote { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 13px; line-height: 1.6; }
-
 /* ─── ERROR ─── */
 #error-panel {
   display: none; height: 100vh; align-items: center; justify-content: center;
@@ -296,7 +272,6 @@ textarea { resize: vertical; min-height: 130px; line-height: 1.6; margin-bottom:
 @media (max-width: 580px) {
   .row2 { grid-template-columns: 1fr; }
   .r-actions { flex-direction: column; }
-  .setup-card { padding: 28px 20px; }
 }
 </style>
 </head>
@@ -343,8 +318,6 @@ textarea { resize: vertical; min-height: 130px; line-height: 1.6; margin-bottom:
   </div>
 </div>
 
-
-
 <!-- ERROR -->
 <div id="error-panel">
   <div class="err-icon">🔍</div>
@@ -380,10 +353,13 @@ textarea { resize: vertical; min-height: 130px; line-height: 1.6; margin-bottom:
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── CONFIG — only edit these two lines ───
+const GEMINI_API_KEY = 'AIzaSyB0MadQj2mrHBJxWv0MedYrjn2w9aIwhQg';
+const GEMINI_MODEL   = 'gemini-2.0-flash';
+// ──────────────────────────────────────────
+
 const SK = 'resumechat_v2';
-const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY_HERE'; // 🔑 Paste your Gemini API key here
-const GEMINI_MODEL = 'gemini-2.0-flash';
-const $ = id => document.getElementById(id);
+const $  = id => document.getElementById(id);
 const param = n => new URLSearchParams(location.search).get(n);
 
 function esc(s) {
@@ -391,21 +367,20 @@ function esc(s) {
 }
 function fmt(t) {
   return esc(t)
-    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g,'<em style="color:var(--accent3);font-style:normal">$1</em>')
-    .replace(/\n/g,'<br>');
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em style="color:var(--accent3);font-style:normal">$1</em>')
+    .replace(/\n/g, '<br>');
 }
 function toast(msg) {
-  const el=$('toast'); el.textContent=msg; el.classList.add('on');
-  setTimeout(()=>el.classList.remove('on'),2600);
+  const el = $('toast'); el.textContent = msg; el.classList.add('on');
+  setTimeout(() => el.classList.remove('on'), 2600);
 }
-function slugify(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
-function getAll() { try{return JSON.parse(localStorage.getItem(SK))||[];}catch{return[];} }
-function saveAll(a) { localStorage.setItem(SK,JSON.stringify(a)); }
+function slugify(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+function getAll() { try { return JSON.parse(localStorage.getItem(SK)) || []; } catch { return []; } }
+function saveAll(a) { localStorage.setItem(SK, JSON.stringify(a)); }
 
 /* ── ROUTING ── */
 const slug = param('r');
-
 if (!slug) {
   $('admin-panel').classList.add('active');
   renderList();
@@ -430,34 +405,34 @@ function addResume() {
   const title  = $('inp-title').value.trim();
   const name   = $('inp-name').value.trim();
   const resume = $('inp-resume').value.trim();
-  if (!title)             return toast('Enter a role/label');
-  if (!name)              return toast('Enter your name');
-  if (resume.length < 40) return toast('Resume text too short');
+  if (!title)              return toast('Enter a role/label');
+  if (!name)               return toast('Enter your name');
+  if (resume.length < 40)  return toast('Resume text too short');
   const all = getAll();
   let sl = slugify(title), base = sl, i = 2;
-  while (all.find(r=>r.slug===sl)) sl = base+'-'+i++;
-  all.push({ slug:sl, title, name, resume, created:Date.now() });
+  while (all.find(r => r.slug === sl)) sl = base + '-' + i++;
+  all.push({ slug: sl, title, name, resume, created: Date.now() });
   saveAll(all); clearForm(); renderList(); toast('✓ Resume added!');
 }
 function deleteResume(sl) {
   if (!confirm('Delete this resume? That link will stop working.')) return;
-  saveAll(getAll().filter(r=>r.slug!==sl)); renderList(); toast('Deleted.');
+  saveAll(getAll().filter(r => r.slug !== sl)); renderList(); toast('Deleted.');
 }
 function copyLink(sl) {
   const url = location.origin + location.pathname + '?r=' + sl;
-  navigator.clipboard.writeText(url).then(()=>toast('✓ Link copied!'));
+  navigator.clipboard.writeText(url).then(() => toast('✓ Link copied!'));
 }
 function openPreview(sl) {
   window.open(location.origin + location.pathname + '?r=' + sl, '_blank');
 }
 function renderList() {
-  const all = getAll().sort((a,b)=>b.created-a.created);
+  const all = getAll().sort((a, b) => b.created - a.created);
   const el = $('resume-list');
   if (!all.length) {
     el.innerHTML = `<div class="empty"><div class="ei">📄</div>No resumes yet. Add one above.</div>`;
     return;
   }
-  el.innerHTML = all.map(r=>`
+  el.innerHTML = all.map(r => `
     <div class="r-card">
       <div class="r-icon">📋</div>
       <div class="r-info">
@@ -481,14 +456,14 @@ function initChat(resume) {
   $('c-role').textContent = resume.title;
   $('chat-panel').classList.add('active');
   $('cinput').placeholder = `Ask anything about ${resume.name}…`;
-  CS = { resume, history:[], busy:false };
+  CS = { resume, history: [], busy: false };
   addMsg('ai', `Hi! I'm **${resume.name}**'s AI assistant. Ask me anything about their background and qualifications for the **${resume.title}** role.`);
 }
 
-function addMsg(role, text, typing=false) {
+function addMsg(role, text, typing = false) {
   const wrap = document.createElement('div');
   wrap.className = `mwrap ${role}`;
-  const icon = role==='ai' ? '🤖' : '🏢';
+  const icon = role === 'ai' ? '🤖' : '🏢';
   if (typing) {
     wrap.id = 'tmsg';
     wrap.innerHTML = `<div class="mavatar">${icon}</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
@@ -496,7 +471,7 @@ function addMsg(role, text, typing=false) {
     wrap.innerHTML = `<div class="mavatar">${icon}</div><div class="bubble">${fmt(text)}</div>`;
   }
   $('messages').appendChild(wrap);
-  wrap.scrollIntoView({behavior:'smooth',block:'end'});
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'end' });
   return wrap;
 }
 
@@ -505,20 +480,20 @@ function useChip(el) {
   $('chips').style.display = 'none';
   send();
 }
-function ck(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} }
-function ar(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,110)+'px'; }
+function ck(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+function ar(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 110) + 'px'; }
 
 async function send() {
-  if (!CS||CS.busy) return;
+  if (!CS || CS.busy) return;
   const inp = $('cinput');
   const text = inp.value.trim();
   if (!text) return;
-  $('chips').style.display='none';
-  inp.value=''; inp.style.height='auto';
-  addMsg('user',text);
-  CS.history.push({role:'user', parts:[{text}]});
-  CS.busy=true; $('csend').disabled=true;
-  const tm = addMsg('ai','',true);
+  $('chips').style.display = 'none';
+  inp.value = ''; inp.style.height = 'auto';
+  addMsg('user', text);
+  CS.history.push({ role: 'user', parts: [{ text }] });
+  CS.busy = true; $('csend').disabled = true;
+  const tm = addMsg('ai', '', true);
   try {
     const sys = `You are an AI assistant representing ${CS.resume.name}, applying for "${CS.resume.title}".
 
@@ -528,7 +503,7 @@ RESUME:
 ${CS.resume.resume}`;
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${gemini-2.0-flash}:generateContent?key=${AIzaSyB0MadQj2mrHBJxWv0MedYrjn2w9aIwhQg}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -541,13 +516,13 @@ ${CS.resume.resume}`;
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
     const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
-    CS.history.push({ role:'model', parts:[{text: reply}] });
+    CS.history.push({ role: 'model', parts: [{ text: reply }] });
     tm.remove(); addMsg('ai', reply);
-  } catch(err) {
+  } catch (err) {
     tm.remove();
-    addMsg('ai','Error: '+err.message);
+    addMsg('ai', 'Error: ' + err.message);
   } finally {
-    CS.busy=false; $('csend').disabled=false; inp.focus();
+    CS.busy = false; $('csend').disabled = false; inp.focus();
   }
 }
 </script>
