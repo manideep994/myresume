@@ -502,15 +502,19 @@ Answer ONLY from the resume below. Speak in first person as ${CS.resume.name} (e
 RESUME:
 ${CS.resume.resume}`;
 
+    // Build contents: system prompt as first user turn, then real history
+    const contents = [
+      { role: 'user', parts: [{ text: sys + '\n\nUnderstood. I will only answer based on the resume above.' }] },
+      { role: 'model', parts: [{ text: 'Understood. I will only answer based on the resume above.' }] },
+      ...CS.history
+    ];
+
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: sys }] },
-          contents: CS.history
-        })
+        body: JSON.stringify({ contents })
       }
     );
     const data = await res.json();
@@ -520,7 +524,8 @@ ${CS.resume.resume}`;
     tm.remove(); addMsg('ai', reply);
   } catch (err) {
     tm.remove();
-    addMsg('ai', 'Error: ' + err.message);
+    console.error('Gemini error:', err);
+    addMsg('ai', '⚠️ Error: ' + err.message + ' — Check browser console for details.');
   } finally {
     CS.busy = false; $('csend').disabled = false; inp.focus();
   }
