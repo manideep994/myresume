@@ -288,7 +288,7 @@ textarea { resize: vertical; min-height: 130px; line-height: 1.6; margin-bottom:
       <div class="tag">ADMIN</div>
     </div>
     <div class="adm-hero">
-      <h1>Many resumes,<br><i>one platform</i></h1>
+      <h1>any resumes,<br><i>one platform</i></h1>
       <p>Each resume gets a unique link → recruiters chat only with that version</p>
     </div>
     <div class="sec-label">Add Resume</div>
@@ -379,6 +379,9 @@ function slugify(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace
 function getAll() { try { return JSON.parse(localStorage.getItem(SK)) || []; } catch { return []; } }
 function saveAll(a) { localStorage.setItem(SK, JSON.stringify(a)); }
 
+/* ── CHAT STATE ── */
+let CS = null;
+
 /* ── ROUTING ── */
 const slug = param('r');
 if (!slug) {
@@ -448,8 +451,6 @@ function renderList() {
 }
 
 /* ── CHAT ── */
-let CS = null;
-
 function initChat(resume) {
   document.title = `Chat with ${resume.name}`;
   $('c-name').textContent = resume.name;
